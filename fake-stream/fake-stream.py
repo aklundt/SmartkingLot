@@ -2,8 +2,9 @@ import cv2
 import time
 import socket
 import threading
+import os
 
-VIDEO_PATH = 'lot_slow.mp4'
+VIDEO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lot_slow.mp4')
 HOST = 'localhost'
 PORT = 8080
 
