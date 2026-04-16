@@ -1,14 +1,15 @@
 import os
 import sqlite3
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
-DB_PATH = os.getenv('DB_PATH', 'parking.db')
+load_dotenv(Path(__file__).parent.parent / '.env')
+DB_PATH = os.getenv('DB_PATH', 'api/parking.db')
 
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  # rows behave like dicts
+    conn.row_factory = sqlite3.Row
     return conn
 
 
@@ -16,7 +17,6 @@ def init_db():
     conn = get_conn()
     c = conn.cursor()
 
-    # permanent spot registry — populated on first snapshot, never cleared
     c.execute('''
         CREATE TABLE IF NOT EXISTS spots (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,7 +26,6 @@ def init_db():
         )
     ''')
 
-    # one row per detection cycle
     c.execute('''
         CREATE TABLE IF NOT EXISTS snapshots (
             id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,20 +36,17 @@ def init_db():
         )
     ''')
 
-    # per-spot occupancy for each snapshot
     c.execute('''
         CREATE TABLE IF NOT EXISTS spot_states (
             snapshot_id INTEGER NOT NULL REFERENCES snapshots(id),
             spot_id     INTEGER NOT NULL REFERENCES spots(id),
-            occupied    INTEGER NOT NULL  -- 1 = occupied, 0 = open
+            occupied    INTEGER NOT NULL
         )
     ''')
 
-    # single-row table storing the camera frame dimensions
-    # needed so the frontend can scale dot positions correctly
     c.execute('''
         CREATE TABLE IF NOT EXISTS camera_config (
-            id        INTEGER PRIMARY KEY CHECK (id = 1),  -- only ever one row
+            id         INTEGER PRIMARY KEY CHECK (id = 1),
             img_width  INTEGER NOT NULL,
             img_height INTEGER NOT NULL
         )
@@ -68,7 +64,6 @@ def spots_registered():
 
 
 def register_spots(detections):
-    """Insert detections as permanent spots. Called only on first snapshot."""
     conn = get_conn()
     conn.executemany(
         'INSERT INTO spots (cx, cy) VALUES (?, ?)',
@@ -105,11 +100,6 @@ def get_camera_config():
 
 
 def save_snapshot(spot_states):
-    """
-    spot_states: dict of {spot_id: bool}  True = occupied
-    Writes one snapshot row + one spot_state row per spot.
-    Returns the snapshot id.
-    """
     total    = len(spot_states)
     occupied = sum(1 for v in spot_states.values() if v)
     open_    = total - occupied
@@ -131,19 +121,13 @@ def save_snapshot(spot_states):
 
 
 def get_latest_state():
-    """Returns the most recent snapshot with per-spot states."""
     conn = get_conn()
-
-    snap = conn.execute(
-        'SELECT * FROM snapshots ORDER BY id DESC LIMIT 1'
-    ).fetchone()
-
+    snap = conn.execute('SELECT * FROM snapshots ORDER BY id DESC LIMIT 1').fetchone()
     if not snap:
         conn.close()
         return None
 
     snap = dict(snap)
-
     spot_rows = conn.execute('''
         SELECT s.id, s.cx, s.cy, ss.occupied
         FROM spot_states ss
@@ -157,7 +141,6 @@ def get_latest_state():
 
 
 def get_history(hours=24):
-    """Returns one aggregate row per snapshot for the last N hours."""
     conn = get_conn()
     rows = conn.execute('''
         SELECT id, timestamp, total, occupied, open
