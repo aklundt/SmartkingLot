@@ -1,1 +1,7 @@
 opencv-python
+flask
+flask-cors
+python-dotenv
+requests
+ultralytics
+python-dotenv
