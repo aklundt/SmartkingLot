@@ -46,6 +46,8 @@ def detect(frame_bytes):
         detections.append({
             'cx':         (x1 + x2) / 2,
             'cy':         (y1 + y2) / 2,
+            'w':          x2 - x1,
+            'h':          y2 - y1,
             'occupied':   int(box.cls[0]) == 0,
             'confidence': round(float(box.conf[0]), 3),
         })

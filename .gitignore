@@ -1,2 +1,4 @@
 venv/
 .env
+parking.db
+__pycache__/

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SmartkingLot</title>
+  <style>
+    body { font-family: monospace; background: #111; color: #eee; padding: 20px; }
+    h1 { margin: 0 0 8px; }
+    #meta { color: #888; font-size: 13px; margin-bottom: 20px; }
+    #stats { display: flex; gap: 20px; margin-bottom: 20px; }
+    .stat { background: #222; padding: 12px 20px; border-radius: 6px; }
+    .stat span { display: block; font-size: 11px; color: #888; }
+    .stat b { font-size: 24px; }
+    #map-wrap { position: relative; width: 800px; }
+    #map-wrap img { display: block; width: 100%; border-radius: 6px; }
+    .dot {
+      position: absolute;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid rgba(0,0,0,0.4);
+    }
+    #error { color: #f66; }
+  </style>
+</head>
+<body>
+  <h1>SmartkingLot</h1>
+  <div id="meta">loading...</div>
+  <div id="stats"></div>
+  <div id="map-wrap">
+    <img id="feed" src="/stream" />
+  </div>
+  <p id="error"></p>
+
+  <script>
+    const API = '/api/state';
+
+    async function refresh() {
+      try {
+        const res  = await fetch(API);
+        const data = await res.json();
+        if (!res.ok) { document.getElementById('error').textContent = data.error; return; }
+
+        document.getElementById('error').textContent = '';
+        document.getElementById('meta').textContent  = 'last updated: ' + data.timestamp;
+
+        document.getElementById('stats').innerHTML = `
+          <div class="stat"><span>total</span><b>${data.total}</b></div>
+          <div class="stat"><span>occupied</span><b style="color:#e24b4a">${data.occupied}</b></div>
+          <div class="stat"><span>open</span><b style="color:#639922">${data.open}</b></div>
+          <div class="stat"><span>% occupied</span><b>${Math.round(data.occupied / data.total * 100)}%</b></div>
+        `;
+
+        document.querySelectorAll('.dot').forEach(d => d.remove());
+
+        data.spots.forEach(spot => {
+          const dot = document.createElement('div');
+          dot.className        = 'dot';
+          dot.style.left       = (spot.cx / data.img_width  * 100) + '%';
+          dot.style.top        = (spot.cy / data.img_height * 100) + '%';
+          dot.style.background = spot.occupied ? '#e24b4a' : '#639922';
+          dot.title            = `spot ${spot.id} — ${spot.occupied ? 'occupied' : 'open'}`;
+          document.getElementById('map-wrap').appendChild(dot);
+        });
+
+      } catch (e) {
+        document.getElementById('error').textContent = 'could not reach API: ' + e.message;
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 10000);
+  </script>
+</body>
+</html>
