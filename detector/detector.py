@@ -9,24 +9,21 @@ from pathlib import Path
 
 load_dotenv(Path(__file__).parent.parent / '.env')
 
-STREAM_URL = os.getenv('STREAM_URL',   'http://localhost:8080/feed')
-API_URL    = os.getenv('API_URL',      'http://localhost:5000/api/snapshot')
-MODEL_PATH = os.getenv('MODEL_PATH',   'models/best_320x12n.pt')
+STREAM_URL = os.getenv('STREAM_URL', 'http://localhost:8080/feed')
+API_URL    = os.getenv('API_URL',    'http://localhost:5000/api/snapshot')
 CONFIDENCE = float(os.getenv('CONFIDENCE', 0.35))
 INTERVAL   = int(os.getenv('INTERVAL', 60))
 
-# resolve model path relative to project root
-MODEL_PATH = Path(__file__).parent.parent / MODEL_PATH
+MODEL_PATH = Path(__file__).parent.parent / 'models' / 'best_320x12n.pt'
 
 model = YOLO(MODEL_PATH)
-print(f'[detector] Model loaded: {MODEL_PATH}')
-print(f'[detector] Stream:       {STREAM_URL}')
-print(f'[detector] API:          {API_URL}')
-print(f'[detector] Interval:     {INTERVAL}s')
+print(f'[detector] Model:    {MODEL_PATH}')
+print(f'[detector] Stream:   {STREAM_URL}')
+print(f'[detector] API:      {API_URL}')
+print(f'[detector] Interval: {INTERVAL}s')
 
 
 def grab_frame():
-    """Pull one JPEG frame from the MJPEG stream."""
     r = requests.get(STREAM_URL, stream=True, timeout=10)
     buf = b''
     for chunk in r.iter_content(chunk_size=1024):
@@ -39,10 +36,8 @@ def grab_frame():
 
 
 def detect(frame_bytes):
-    """Run YOLO on raw JPEG bytes, return list of detection dicts."""
     frame = cv2.imdecode(np.frombuffer(frame_bytes, np.uint8), cv2.IMREAD_COLOR)
     h, w  = frame.shape[:2]
-
     results = model.predict(frame, conf=CONFIDENCE, verbose=False)
 
     detections = []
@@ -59,12 +54,11 @@ def detect(frame_bytes):
 
 
 def post_snapshot(detections, img_width, img_height):
-    payload = {
+    r = requests.post(API_URL, json={
         'img_width':  img_width,
         'img_height': img_height,
         'detections': detections,
-    }
-    r = requests.post(API_URL, json=payload, timeout=10)
+    }, timeout=10)
     r.raise_for_status()
     return r.json()
 
@@ -72,7 +66,7 @@ def post_snapshot(detections, img_width, img_height):
 def run():
     while True:
         try:
-            print(f'[detector] Grabbing frame...')
+            print('[detector] Grabbing frame...')
             frame_bytes = grab_frame()
 
             detections, w, h = detect(frame_bytes)
@@ -80,10 +74,10 @@ def run():
 
             if detections:
                 result = post_snapshot(detections, w, h)
-                print(f'[detector] Posted snapshot {result["snapshot_id"]} — '
+                print(f'[detector] Snapshot {result["snapshot_id"]} — '
                       f'{result["occupied"]} occupied / {result["open"]} open')
             else:
-                print(f'[detector] No detections above threshold, skipping post')
+                print('[detector] No detections above threshold, skipping post')
 
         except Exception as e:
             print(f'[detector] Error: {e}')

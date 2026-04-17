@@ -7,8 +7,7 @@ import db
 
 load_dotenv(Path(__file__).parent.parent / '.env')
 
-HOST        = os.getenv('HOST', '0.0.0.0')
-PORT        = int(os.getenv('PORT', 5000))
+API_PORT    = int(os.getenv('API_PORT', 5000))
 MAX_DIST_PX = int(os.getenv('MAX_DIST_PX', 60))
 
 app = Flask(__name__)
@@ -77,7 +76,7 @@ def get_history():
 @app.route('/api/reset', methods=['POST'])
 def reset_spots():
     import sqlite3
-    conn = sqlite3.connect(os.getenv('DB_PATH', 'api/parking.db'))
+    conn = sqlite3.connect(os.getenv('DB_PATH', 'parking.db'))
     conn.execute('DELETE FROM spot_states')
     conn.execute('DELETE FROM snapshots')
     conn.execute('DELETE FROM spots')
@@ -89,5 +88,5 @@ def reset_spots():
 
 if __name__ == '__main__':
     db.init_db()
-    print(f'[api] Starting on http://{HOST}:{PORT}')
-    app.run(host=HOST, port=PORT, debug=True)
+    print(f'[api] Starting on http://0.0.0.0:{API_PORT}')
+    app.run(host='0.0.0.0', port=API_PORT, debug=True)

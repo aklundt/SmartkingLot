@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / '.env')
-DB_PATH = os.getenv('DB_PATH', 'api/parking.db')
+DB_PATH = os.getenv('DB_PATH', 'parking.db')
 
 
 def get_conn():
