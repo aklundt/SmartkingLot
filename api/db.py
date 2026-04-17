@@ -20,16 +20,25 @@ def init_db():
     c.execute('''
         CREATE TABLE IF NOT EXISTS spots (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            cx         REAL    NOT NULL,
-            cy         REAL    NOT NULL,
-            created_at TEXT    DEFAULT (datetime('now'))
+            cx         REAL NOT NULL,
+            cy         REAL NOT NULL,
+            w          REAL NOT NULL DEFAULT 0,
+            h          REAL NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
         )
     ''')
+
+    # migrate existing db that may not have w/h columns
+    try:
+        c.execute('ALTER TABLE spots ADD COLUMN w REAL NOT NULL DEFAULT 0')
+        c.execute('ALTER TABLE spots ADD COLUMN h REAL NOT NULL DEFAULT 0')
+    except:
+        pass
 
     c.execute('''
         CREATE TABLE IF NOT EXISTS snapshots (
             id        INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT    DEFAULT (datetime('now')),
+            timestamp TEXT DEFAULT (datetime('now')),
             total     INTEGER NOT NULL,
             occupied  INTEGER NOT NULL,
             open      INTEGER NOT NULL
@@ -66,8 +75,8 @@ def spots_registered():
 def register_spots(detections):
     conn = get_conn()
     conn.executemany(
-        'INSERT INTO spots (cx, cy) VALUES (?, ?)',
-        [(d['cx'], d['cy']) for d in detections]
+        'INSERT INTO spots (cx, cy, w, h) VALUES (?, ?, ?, ?)',
+        [(d['cx'], d['cy'], d['w'], d['h']) for d in detections]
     )
     conn.commit()
     all_spots = [dict(r) for r in conn.execute('SELECT * FROM spots').fetchall()]
@@ -129,7 +138,7 @@ def get_latest_state():
 
     snap = dict(snap)
     spot_rows = conn.execute('''
-        SELECT s.id, s.cx, s.cy, ss.occupied
+        SELECT s.id, s.cx, s.cy, s.w, s.h, ss.occupied
         FROM spot_states ss
         JOIN spots s ON s.id = ss.spot_id
         WHERE ss.snapshot_id = ?

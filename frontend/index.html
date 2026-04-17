@@ -13,12 +13,32 @@
     .stat b { font-size: 24px; }
     #map-wrap { position: relative; width: 800px; }
     #map-wrap img { display: block; width: 100%; border-radius: 6px; }
-    .dot {
+    .box {
       position: absolute;
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      border: 2px solid rgba(0,0,0,0.4);
+      border: 2px solid;
+      border-radius: 3px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    .box.occupied {
+      border-color: #e24b4a;
+      background: rgba(226, 75, 74, 0.15);
+      color: #e24b4a;
+    }
+    .box span {
+      background: rgba(255,255,255,0.85);
+      padding: 0 2px;
+      border-radius: 2px;
+      line-height: 1.3;
+    }
+    .box.open {
+      border-color: #639922;
+      background: rgba(99, 153, 34, 0.15);
+      color: #639922;
     }
     #error { color: #f66; }
   </style>
@@ -51,16 +71,22 @@
           <div class="stat"><span>% occupied</span><b>${Math.round(data.occupied / data.total * 100)}%</b></div>
         `;
 
-        document.querySelectorAll('.dot').forEach(d => d.remove());
+        document.querySelectorAll('.box').forEach(d => d.remove());
+
+        const pctX = 100 / data.img_width;
+        const pctY = 100 / data.img_height;
 
         data.spots.forEach(spot => {
-          const dot = document.createElement('div');
-          dot.className        = 'dot';
-          dot.style.left       = (spot.cx / data.img_width  * 100) + '%';
-          dot.style.top        = (spot.cy / data.img_height * 100) + '%';
-          dot.style.background = spot.occupied ? '#e24b4a' : '#639922';
-          dot.title            = `spot ${spot.id} — ${spot.occupied ? 'occupied' : 'open'}`;
-          document.getElementById('map-wrap').appendChild(dot);
+          const box = document.createElement('div');
+          box.className    = `box ${spot.occupied ? 'occupied' : 'open'}`;
+          box.style.left   = ((spot.cx - spot.w / 2) * pctX) + '%';
+          box.style.top    = ((spot.cy - spot.h / 2) * pctY) + '%';
+          box.style.width  = (spot.w * pctX) + '%';
+          box.style.height = (spot.h * pctY) + '%';
+          const label = document.createElement("span");
+          label.textContent = spot.id;
+          box.appendChild(label);
+          document.getElementById('map-wrap').appendChild(box);
         });
 
       } catch (e) {

@@ -1,4 +1,5 @@
-venv/
+.venv/
 .env
 parking.db
 __pycache__/
+*.pyc
