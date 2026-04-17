@@ -5,7 +5,7 @@ import socket
 import threading
 import cv2
 
-HOST = 'localhost'
+HOST = '0.0.0.0'
 PORT = 8080
 FPS  = 1
 

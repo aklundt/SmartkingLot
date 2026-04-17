@@ -75,9 +75,15 @@ def match_detections_to_spots(detections, registered_spots):
     return states
 
 
+@app.route('/health')
+def health():
+    return 'ok', 200
+
+
 @app.route('/')
 def index():
-    return send_from_directory('../frontend', 'index.html')
+    FRONTEND = Path(__file__).parent.parent / "frontend"
+    return send_from_directory(str(FRONTEND), "index.html")
 
 
 @app.route('/stream')

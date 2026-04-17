@@ -1,0 +1,40 @@
+services:
+  api:
+    build: .
+    command: python api/server.py
+    ports:
+      - "5000:5000"
+    volumes:
+      - db_data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      DB_PATH: /app/data/parking.db
+      STREAM_URL: http://host.docker.internal:8080/feed
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+  detector:
+    build: .
+    command: python detector/detector.py
+    depends_on:
+      api:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      API_URL: http://api:5000/api/snapshot
+      STREAM_URL: http://host.docker.internal:8080/feed
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  db_data:
