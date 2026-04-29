@@ -541,6 +541,10 @@
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
       Users
     </a>
+    <a class="nav-item" id="api-keys-nav" style="display:none;" onclick="showApiKeysPanel()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+      API Keys
+    </a>
     <a class="nav-item">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
       Settings
@@ -709,6 +713,79 @@
       </div>
 
     </section>
+
+    <!-- ============================================================
+         API KEYS MANAGEMENT PANEL (Admin only, hidden by default)
+         ============================================================ -->
+    <section class="content" id="api-keys-panel" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:700;">API Keys</h1>
+          <p style="margin:4px 0 0;color:var(--ink-soft);font-size:14px;">Manage API keys for detector authentication</p>
+        </div>
+        <button class="btn" onclick="showCreateKeyModal()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Create API Key
+        </button>
+      </div>
+
+      <div class="card">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Name</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Description</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Created</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Last Used</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Status</th>
+              <th style="text-align:right;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="api-keys-table-body">
+            <tr><td colspan="6" style="padding:24px 0;text-align:center;color:var(--muted);">Loading API keys...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Create API Key Modal -->
+    <div id="api-key-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;">
+      <div class="card" style="max-width:500px;width:90%;max-height:90vh;overflow-y:auto;">
+        <h2 style="margin:0 0 20px;font-size:18px;font-weight:600;" id="key-modal-title">Create API Key</h2>
+        
+        <div id="key-form" style="display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;">Name</label>
+            <input type="text" id="key-name" placeholder="e.g., Main Detector" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+          </div>
+          
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;">Description (optional)</label>
+            <textarea id="key-description" rows="3" placeholder="What is this key for?" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;"></textarea>
+          </div>
+          
+          <div id="key-modal-error" style="display:none;background:#fef2f2;color:#b91c1c;padding:10px 12px;border-radius:8px;font-size:13px;"></div>
+          
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button class="btn" onclick="createApiKey()" style="flex:1;">Create Key</button>
+            <button class="btn ghost" onclick="closeKeyModal()" style="flex:1;">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Show key after creation -->
+        <div id="key-created" style="display:none;">
+          <div style="background:var(--brand-50);border:1px solid var(--brand);border-radius:8px;padding:16px;margin-bottom:16px;">
+            <p style="margin:0 0 10px;font-size:13px;font-weight:600;color:var(--brand-ink);">⚠️ Save this key now - it will never be shown again!</p>
+            <div style="background:#fff;padding:10px 12px;border-radius:6px;font-family:var(--font-mono);font-size:12px;word-break:break-all;border:1px solid var(--border);" id="created-key-value"></div>
+            <button class="btn ghost" onclick="copyApiKey()" style="width:100%;margin-top:10px;font-size:12px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              Copy to Clipboard
+            </button>
+          </div>
+          <button class="btn" onclick="closeKeyModal();loadApiKeys();" style="width:100%;">Done</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ============================================================
          USERS MANAGEMENT PANEL (Admin only, hidden by default)
@@ -1187,6 +1264,7 @@
   function showDashboard() {
     $('login-screen').style.display = 'none';
     $('dashboard').style.display = 'grid';
+    loadCurrentUser(); // Load user info to show admin nav items
     refresh();
     refreshTimer = setInterval(refresh, REFRESH_MS);
   }
@@ -1214,9 +1292,10 @@
       const res = await fetch(`${API_BASE}/me`, { credentials: 'include' });
       if (res.ok) {
         currentUser = await res.json();
-        // Show users nav if admin
+        // Show admin nav items if admin
         if (currentUser.is_admin) {
           $('users-nav').style.display = 'flex';
+          $('api-keys-nav').style.display = 'flex';
         }
       }
     } catch (err) {
@@ -1370,6 +1449,149 @@
       loadUsers();
     } catch (err) {
       alert('Failed to delete user: ' + err.message);
+    }
+  }
+
+  // ============================================================
+  // API Key Management (Admin only)
+  // ============================================================
+  
+  async function loadApiKeys() {
+    try {
+      const res = await fetch(`${API_BASE}/api/keys`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load API keys');
+      
+      const keys = await res.json();
+      const tbody = $('api-keys-table-body');
+      
+      if (keys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:24px 0;text-align:center;color:var(--muted);">No API keys yet</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = keys.map(k => `
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:14px 0;font-weight:500;">${k.name}</td>
+          <td style="padding:14px 0;color:var(--ink-soft);font-size:13px;">${k.description || '—'}</td>
+          <td style="padding:14px 0;color:var(--ink-soft);font-size:13px;">${new Date(k.created_at).toLocaleDateString()}</td>
+          <td style="padding:14px 0;color:var(--ink-soft);font-size:13px;">${k.last_used ? new Date(k.last_used).toLocaleString() : 'Never'}</td>
+          <td style="padding:14px 0;">
+            <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;
+              ${k.active ? 'background:#ecfdf5;color:#047857;' : 'background:#fef2f2;color:#b91c1c;'}">
+              ${k.active ? 'Active' : 'Revoked'}
+            </span>
+          </td>
+          <td style="padding:14px 0;text-align:right;">
+            ${k.active ? `<button class="btn ghost" style="padding:6px 12px;font-size:12px;margin-right:6px;color:var(--amber);" onclick="revokeApiKeyConfirm(${k.id}, '${k.name}')">Revoke</button>` : ''}
+            <button class="btn ghost" style="padding:6px 12px;font-size:12px;color:var(--occupied);" onclick="deleteApiKeyConfirm(${k.id}, '${k.name}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      console.error('[api-key] Failed to load API keys:', err);
+      $('api-keys-table-body').innerHTML = '<tr><td colspan="6" style="padding:24px 0;text-align:center;color:var(--occupied);">Failed to load API keys</td></tr>';
+    }
+  }
+
+  function showApiKeysPanel() {
+    document.querySelectorAll('.content').forEach(el => el.style.display = 'none');
+    $('api-keys-panel').style.display = 'block';
+    loadApiKeys();
+  }
+
+  function showCreateKeyModal() {
+    $('key-modal-title').textContent = 'Create API Key';
+    $('key-name').value = '';
+    $('key-description').value = '';
+    $('key-modal-error').style.display = 'none';
+    $('key-form').style.display = 'flex';
+    $('key-created').style.display = 'none';
+    $('api-key-modal').style.display = 'flex';
+  }
+
+  async function createApiKey() {
+    const name = $('key-name').value.trim();
+    const description = $('key-description').value.trim() || null;
+    const errorDiv = $('key-modal-error');
+    
+    if (!name) {
+      errorDiv.textContent = 'Name is required';
+      errorDiv.style.display = 'block';
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/keys`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, description })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to create API key');
+      }
+      
+      const data = await res.json();
+      
+      // Show the key
+      $('created-key-value').textContent = data.api_key;
+      $('key-form').style.display = 'none';
+      $('key-created').style.display = 'block';
+    } catch (err) {
+      errorDiv.textContent = err.message;
+      errorDiv.style.display = 'block';
+    }
+  }
+
+  function copyApiKey() {
+    const keyText = $('created-key-value').textContent;
+    navigator.clipboard.writeText(keyText).then(() => {
+      const btn = event.target.closest('button');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Copied!';
+      setTimeout(() => btn.innerHTML = originalText, 2000);
+    });
+  }
+
+  function closeKeyModal() {
+    $('api-key-modal').style.display = 'none';
+  }
+
+  async function revokeApiKeyConfirm(keyId, name) {
+    if (!confirm(`Revoke API key "${name}"? The detector will no longer be able to authenticate.`)) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/keys/${keyId}/revoke`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (!res.ok) throw new Error('Failed to revoke API key');
+      loadApiKeys();
+    } catch (err) {
+      alert('Failed to revoke API key: ' + err.message);
+    }
+  }
+
+  async function deleteApiKeyConfirm(keyId, name) {
+    if (!confirm(`Permanently delete API key "${name}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/keys/${keyId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!res.ok) throw new Error('Failed to delete API key');
+      loadApiKeys();
+    } catch (err) {
+      alert('Failed to delete API key: ' + err.message);
     }
   }
 
