@@ -150,6 +150,12 @@ def get_history():
     return jsonify(db.get_history(hours))
 
 
+@app.route('/api/spots', methods=['GET'])
+def get_spot_stats():
+    """Per-spot statistics: observations, occupied %, turnover."""
+    return jsonify(db.get_spot_stats())
+
+
 @app.route('/api/reset', methods=['POST'])
 def reset_spots():
     import sqlite3
@@ -157,6 +163,8 @@ def reset_spots():
     conn.execute('DELETE FROM spot_states')
     conn.execute('DELETE FROM snapshots')
     conn.execute('DELETE FROM spots')
+    # reset autoincrement sequence so spot IDs start at 1 again
+    conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('spots', 'snapshots')")
     conn.commit()
     conn.close()
     print('[api] Spots and history cleared')
