@@ -9,7 +9,7 @@ Two modes:
 
   2. Auto-rotate (random image every N seconds):
        python3 fake-stream.py --auto
-     Picks a random image from lot1.jpg-lot4.jpg every 30s.
+     Picks a random image from lot1.jpg-lot11.jpg every 2 minutes.
 """
 
 import sys
@@ -25,8 +25,8 @@ PORT = 8080
 FPS  = 1
 
 # auto mode config
-AUTO_INTERVAL  = 30
-AUTO_PATTERNS  = ['lot1.jpg', 'lot2.jpg', 'lot3.jpg', 'lot4.jpg']
+AUTO_INTERVAL  = 40
+AUTO_PATTERNS  = [f'lot{i}.jpg' for i in range(1, 12)]
 
 current_frame = None
 frame_lock    = threading.Lock()

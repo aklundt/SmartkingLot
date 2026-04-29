@@ -77,7 +77,8 @@
       align-items: center;
       gap: 12px;
     }
-    #theme-toggle {
+    #theme-toggle,
+    #rescan-button {
       appearance: none;
       border: 1px solid var(--border);
       background: transparent;
@@ -93,11 +94,14 @@
       opacity: 0.45;
     }
     #theme-toggle:hover,
-    #theme-toggle:focus-visible {
+    #theme-toggle:focus-visible,
+    #rescan-button:hover,
+    #rescan-button:focus-visible {
       opacity: 0.95;
       color: var(--text);
       outline: none;
     }
+    #rescan-button.busy { opacity: 0.85; color: var(--accent); }
 
     .kpis {
       display: grid;
@@ -353,6 +357,7 @@
     <h1>SmartkingLot</h1>
     <div class="header-actions">
       <div id="meta">connecting…</div>
+      <button id="rescan-button" type="button" aria-label="Run full rescan" title="Run full rescan">scan</button>
       <button id="theme-toggle" type="button" aria-label="Switch to light mode" title="Switch theme">light</button>
     </div>
   </header>
@@ -495,12 +500,23 @@
     }
 
     let lastTimestamp = null;
+    let serverClockOffsetMs = 0;
     let historyHours  = 24;
     let chart         = null;
 
+    function parseUtc(timestampStr) {
+      return new Date(timestampStr.replace(' ', 'T') + 'Z');
+    }
+
+    function noteServerTime(timestampStr) {
+      if (!timestampStr) return;
+      serverClockOffsetMs = Date.now() - parseUtc(timestampStr).getTime();
+    }
+
     function formatAgo(timestampStr) {
-      const t  = new Date(timestampStr.replace(' ', 'T') + 'Z');
-      const ms = Date.now() - t.getTime();
+      const t  = parseUtc(timestampStr);
+      const serverNow = Date.now() - serverClockOffsetMs;
+      const ms = serverNow - t.getTime();
       const s  = Math.max(0, Math.floor(ms / 1000));
       if (s < 60) return `${s}s ago`;
       const m = Math.floor(s / 60);
@@ -511,7 +527,7 @@
 
     function updateMeta() {
       if (!lastTimestamp) return;
-      document.getElementById('meta').innerHTML = `updated <b>${formatAgo(lastTimestamp)}</b>`;
+      document.getElementById('meta').innerHTML = `snapshot <b>${formatAgo(lastTimestamp)}</b>`;
     }
 
     function rangeLabel(hours) {
@@ -612,6 +628,7 @@
         const history = await histRes.json();
 
         lastTimestamp = state.timestamp;
+        noteServerTime(state.server_time);
         updateMeta();
 
         document.getElementById('kpi-now').innerHTML = `
@@ -684,10 +701,37 @@
 
         renderChart(history);
         setupHoverHighlight();
+        return state;
 
       } catch (e) {
         document.getElementById('error').textContent = 'could not reach API: ' + e.message;
+        return null;
       }
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function waitForNewSnapshot(previousTimestamp, timeoutMs = 90000) {
+      const started = Date.now();
+      while (Date.now() - started < timeoutMs) {
+        await sleep(2000);
+        const state = await refresh();
+        if (state && state.timestamp !== previousTimestamp) return true;
+      }
+
+      try {
+        const res = await fetch('/api/detector/status');
+        if (res.ok) {
+          const status = await res.json();
+          const detail = status.last_error || status.last_message || status.phase || 'no new snapshot yet';
+          document.getElementById('error').textContent = 'rescan did not post a new snapshot: ' + detail;
+        }
+      } catch (e) {
+        document.getElementById('error').textContent = 'rescan did not post a new snapshot yet';
+      }
+      return false;
     }
 
     document.querySelectorAll('.range button').forEach(btn => {
@@ -701,6 +745,25 @@
 
     document.getElementById('theme-toggle').addEventListener('click', () => {
       applyTheme(document.body.dataset.theme === 'light' ? 'dark' : 'light');
+    });
+
+    document.getElementById('rescan-button').addEventListener('click', async () => {
+      const btn = document.getElementById('rescan-button');
+      btn.disabled = true;
+      btn.classList.add('busy');
+      btn.textContent = 'scan...';
+      try {
+        const previousTimestamp = lastTimestamp;
+        const res = await fetch('/api/rescan', { method: 'POST' });
+        if (!res.ok) throw new Error(await res.text());
+        await waitForNewSnapshot(previousTimestamp);
+      } catch (e) {
+        document.getElementById('error').textContent = 'could not trigger rescan: ' + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('busy');
+        btn.textContent = 'scan';
+      }
     });
 
     applyTheme(localStorage.getItem('smartkinglot-theme') || 'dark');

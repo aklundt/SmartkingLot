@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_from_directory, Response
@@ -11,6 +12,7 @@ API_PORT    = int(os.getenv('API_PORT', 5000))
 MAX_DIST_PX = int(os.getenv('MAX_DIST_PX', 60))
 NMS_IOU     = float(os.getenv('NMS_IOU', 0.30))
 STREAM_URL  = os.getenv('STREAM_URL', 'http://localhost:8080/feed')
+DETECTOR_URL = os.getenv('DETECTOR_URL', 'http://detector:5001')
 
 app = Flask(__name__)
 
@@ -155,6 +157,7 @@ def get_state():
     cam = db.get_camera_config()
     state['img_width']  = cam['img_width']
     state['img_height'] = cam['img_height']
+    state['server_time'] = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     return jsonify(state)
 
 
@@ -168,6 +171,20 @@ def get_history():
 def get_spot_stats():
     """Per-spot statistics: observations, occupied %, turnover."""
     return jsonify(db.get_spot_stats())
+
+
+@app.route('/api/rescan', methods=['POST'])
+def rescan():
+    r = req.post(f'{DETECTOR_URL}/rescan', timeout=5)
+    r.raise_for_status()
+    return jsonify({'status': 'queued'}), 202
+
+
+@app.route('/api/detector/status', methods=['GET'])
+def detector_status():
+    r = req.get(f'{DETECTOR_URL}/status', timeout=5)
+    r.raise_for_status()
+    return jsonify(r.json())
 
 
 @app.route('/api/normalize', methods=['POST'])

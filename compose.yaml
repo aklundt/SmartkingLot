@@ -11,6 +11,7 @@ services:
     environment:
       DB_PATH: /app/data/parking.db
       STREAM_URL: http://host.docker.internal:8080/feed
+      DETECTOR_URL: http://detector:5001
     env_file:
       - .env
     restart: unless-stopped
@@ -32,6 +33,7 @@ services:
     environment:
       API_URL: http://api:5000/api/snapshot
       STREAM_URL: http://host.docker.internal:8080/feed
+      DETECTOR_PORT: 5001
     env_file:
       - .env
     restart: unless-stopped

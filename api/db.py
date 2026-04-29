@@ -54,6 +54,16 @@ def init_db():
     ''')
 
     c.execute('''
+        CREATE INDEX IF NOT EXISTS idx_spot_states_spot_snapshot
+        ON spot_states (spot_id, snapshot_id)
+    ''')
+
+    c.execute('''
+        CREATE INDEX IF NOT EXISTS idx_spot_states_snapshot
+        ON spot_states (snapshot_id)
+    ''')
+
+    c.execute('''
         CREATE TABLE IF NOT EXISTS camera_config (
             id         INTEGER PRIMARY KEY CHECK (id = 1),
             img_width  INTEGER NOT NULL,
@@ -287,11 +297,15 @@ def get_last_states():
     """
     conn = get_conn()
     rows = conn.execute('''
-        SELECT spot_id, occupied
+        SELECT ss.spot_id, ss.occupied
         FROM spot_states ss
-        WHERE snapshot_id = (
-            SELECT MAX(snapshot_id) FROM spot_states ss2 WHERE ss2.spot_id = ss.spot_id
-        )
+        JOIN (
+            SELECT spot_id, MAX(snapshot_id) AS snapshot_id
+            FROM spot_states
+            GROUP BY spot_id
+        ) latest
+          ON latest.spot_id = ss.spot_id
+         AND latest.snapshot_id = ss.snapshot_id
     ''').fetchall()
     conn.close()
     return {r['spot_id']: r['occupied'] for r in rows}
