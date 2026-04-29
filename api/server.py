@@ -118,11 +118,25 @@ def post_snapshot():
 
     if not db.spots_registered():
         registered = db.register_spots(detections)
-        print(f'[api] Registered {len(registered)} spots for the first time')
+        db.normalize_spot_ids()
+        registered = db.get_all_spots()  # refetch with new IDs
+        print(f'[api] Registered {len(registered)} spots and normalized IDs')
     else:
         registered = db.get_all_spots()
 
     spot_states = match_detections_to_spots(detections, registered)
+
+    # carry forward last known state for spots that the current detection missed
+    # (occasional model misses shouldn't make spots disappear from the snapshot)
+    last_states = db.get_last_states()
+    carried = 0
+    for spot in registered:
+        if spot['id'] not in spot_states and spot['id'] in last_states:
+            spot_states[spot['id']] = bool(last_states[spot['id']])
+            carried += 1
+    if carried:
+        print(f'[api] Carried forward {carried} spots missing from current frame')
+
     snapshot_id = db.save_snapshot(spot_states)
 
     occ   = sum(1 for v in spot_states.values() if v)
@@ -154,6 +168,14 @@ def get_history():
 def get_spot_stats():
     """Per-spot statistics: observations, occupied %, turnover."""
     return jsonify(db.get_spot_stats())
+
+
+@app.route('/api/normalize', methods=['POST'])
+def normalize():
+    """Reassign spot IDs in left-to-right, top-to-bottom order."""
+    count = db.normalize_spot_ids()
+    print(f'[api] Normalized {count} spot IDs')
+    return jsonify({'normalized': count})
 
 
 @app.route('/api/reset', methods=['POST'])

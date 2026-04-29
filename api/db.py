@@ -216,3 +216,82 @@ def get_spot_stats():
         result.append(s)
 
     return result
+
+
+def normalize_spot_ids():
+    """
+    Reassign spot IDs in left-to-right, top-to-bottom reading order based on
+    each spot's centroid. Rows are clustered by cy proximity (within half the
+    average spot height) so that spots in the same physical row share a row
+    index even if their cy values differ slightly.
+
+    Updates spots and spot_states atomically so all foreign key references
+    stay consistent. Safe to call repeatedly; idempotent if order is already
+    normalized.
+    """
+    conn = get_conn()
+    spots = [dict(r) for r in conn.execute('SELECT * FROM spots').fetchall()]
+
+    if not spots:
+        conn.close()
+        return 0
+
+    # cluster spots into rows: sort by cy, then walk through and break a new
+    # row whenever cy jumps by more than half the average spot height
+    avg_h = sum(s['h'] for s in spots) / len(spots)
+    row_threshold = avg_h * 0.5
+
+    spots.sort(key=lambda s: s['cy'])
+    rows = [[spots[0]]]
+    for s in spots[1:]:
+        if s['cy'] - rows[-1][-1]['cy'] > row_threshold:
+            rows.append([s])  # new row
+        else:
+            rows[-1].append(s)
+
+    # within each row, sort left-to-right
+    ordered = []
+    for row in rows:
+        row.sort(key=lambda s: s['cx'])
+        ordered.extend(row)
+
+    # assign new IDs starting at 1 — but to avoid collisions during update,
+    # first remap to negative IDs, then to final positive IDs
+    id_map = {s['id']: i + 1 for i, s in enumerate(ordered)}
+
+    # phase 1: shift everything to negative space (no collisions possible)
+    conn.execute('UPDATE spots SET id = -id')
+    conn.execute('UPDATE spot_states SET spot_id = -spot_id')
+
+    # phase 2: assign final positive IDs
+    for old_id, new_id in id_map.items():
+        conn.execute('UPDATE spots SET id = ? WHERE id = ?', (new_id, -old_id))
+        conn.execute('UPDATE spot_states SET spot_id = ? WHERE spot_id = ?', (new_id, -old_id))
+
+    # reset autoincrement sequence so future inserts continue from the new max
+    conn.execute(
+        "UPDATE sqlite_sequence SET seq = ? WHERE name = 'spots'",
+        (len(ordered),)
+    )
+
+    conn.commit()
+    conn.close()
+    return len(ordered)
+
+
+def get_last_states():
+    """
+    For every registered spot, return its most recently recorded occupancy.
+    Returns dict {spot_id: 0|1}. Spots that have never been observed are not
+    included.
+    """
+    conn = get_conn()
+    rows = conn.execute('''
+        SELECT spot_id, occupied
+        FROM spot_states ss
+        WHERE snapshot_id = (
+            SELECT MAX(snapshot_id) FROM spot_states ss2 WHERE ss2.spot_id = ss.spot_id
+        )
+    ''').fetchall()
+    conn.close()
+    return {r['spot_id']: r['occupied'] for r in rows}

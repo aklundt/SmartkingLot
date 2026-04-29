@@ -3,120 +3,427 @@
 <head>
   <meta charset="UTF-8">
   <title>SmartkingLot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <style>
-    body { font-family: monospace; background: #111; color: #eee; padding: 20px; }
-    h1 { margin: 0 0 8px; }
-    h2 { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin: 30px 0 10px; }
-    #meta { color: #888; font-size: 13px; margin-bottom: 20px; }
-    #stats { display: flex; gap: 20px; margin-bottom: 20px; }
-    .stat { background: #222; padding: 12px 20px; border-radius: 6px; }
-    .stat span { display: block; font-size: 11px; color: #888; }
-    .stat b { font-size: 24px; }
+    :root {
+      --bg:        #0c0c0d;
+      --surface:   #16161a;
+      --surface-2: #1d1d22;
+      --border:    #2a2a30;
+      --text:      #ececec;
+      --text-dim:  #8a8a92;
+      --text-faint:#5a5a62;
+      --red:       #e24b4a;
+      --green:     #87b34a;
+      --accent:    #d4a574;
+      --accent-soft: rgba(212, 165, 116, 0.12);
+      --frame-bg:   #09090a;
+      --chrome:    168px;
+    }
 
-    #map-wrap, #heatmap-wrap { position: relative; width: 800px; }
-    #map-wrap img, #heatmap-wrap img { display: block; width: 100%; border-radius: 6px; }
+    body[data-theme="light"] {
+      --bg:        #f4f2ee;
+      --surface:   #ffffff;
+      --surface-2: #f0ede7;
+      --border:    #d8d3ca;
+      --text:      #1c1c1d;
+      --text-dim:  #6f6a62;
+      --text-faint:#9a9288;
+      --red:       #c63f3e;
+      --green:     #648d35;
+      --accent:    #9b6a3c;
+      --accent-soft: rgba(155, 106, 60, 0.13);
+      --frame-bg:   #e8e4dc;
+    }
 
-    .box {
-      position: absolute;
-      border: 2px solid;
-      border-radius: 3px;
-      box-sizing: border-box;
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; min-height: 100%; }
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 24px 28px 60px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px;
+      margin-bottom: 20px;
+    }
+    header h1 {
+      font-weight: 600;
+      font-size: 18px;
+      margin: 0;
+      letter-spacing: 0;
+    }
+    #meta {
+      color: var(--text-dim);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    #meta b { color: var(--text); font-weight: 500; }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #theme-toggle {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-faint);
+      border-radius: 999px;
+      padding: 1px 6px;
+      font: inherit;
+      font-size: 9px;
+      line-height: 1.5;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      opacity: 0.45;
+    }
+    #theme-toggle:hover,
+    #theme-toggle:focus-visible {
+      opacity: 0.95;
+      color: var(--text);
+      outline: none;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 18px;
+    }
+    .kpi-label {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-weight: 500;
+      font-size: 26px;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+    .kpi-primary .kpi-value { font-size: 30px; }
+    .kpi-primary .kpi-value .occ  { color: var(--red); }
+    .kpi-primary .kpi-value .sep  { color: var(--text-faint); margin: 0 4px; }
+    .kpi-primary .kpi-value .free { color: var(--green); }
+    .kpi-primary .kpi-value .of   { color: var(--text-dim); font-size: 16px; margin-left: 10px; font-weight: 400; }
+
+    .main {
+      display: grid;
+      grid-template-columns: minmax(420px, 1fr) minmax(520px, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+    .main > div { min-width: 0; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 36px;
+    }
+    .card-title {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 500;
+    }
+
+    .frames {
+      display: grid;
+      gap: 16px;
+    }
+    .frames .card {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .frame {
+      position: relative;
+      flex: none;
+      min-height: 0;
+      width: 100%;
+      line-height: 0;
+      background: var(--frame-bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
-      font-weight: bold;
-      transition: outline 0.1s, transform 0.1s;
+      overflow: visible;
+      padding: 8px;
     }
-    .box.occupied { border-color: #e24b4a; background: rgba(226, 75, 74, 0.15); color: #e24b4a; }
-    .box.open     { border-color: #639922; background: rgba(99, 153, 34, 0.15); color: #639922; }
-    .box span { background: rgba(255,255,255,0.85); padding: 0 2px; border-radius: 2px; line-height: 1.3; }
+    .frame-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: var(--image-ratio, 16 / 9);
+    }
+    .frame-stage img {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+    }
+
+    .box {
+      position: absolute;
+      border: 1.5px solid;
+      border-radius: 2px;
+      box-sizing: border-box;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 600;
+      transition: outline 0.12s ease, transform 0.12s ease;
+    }
+    .box.occupied { border-color: var(--red);   background: rgba(226, 75, 74, 0.18); color: var(--red); }
+    .box.open     { border-color: var(--green); background: rgba(135, 179, 74, 0.18); color: var(--green); }
+    .box span {
+      background: rgba(255,255,255,0.92);
+      padding: 0 3px; border-radius: 2px; line-height: 1.3;
+    }
 
     .heat {
       position: absolute;
       border: 1px solid rgba(0,0,0,0.4);
-      border-radius: 3px;
+      border-radius: 2px;
       box-sizing: border-box;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 9px;
-      color: #fff;
-      text-shadow: 0 0 3px rgba(0,0,0,0.9);
-      font-weight: bold;
-      transition: outline 0.1s, transform 0.1s;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 600;
+      color: #fff; text-shadow: 0 0 3px rgba(0,0,0,0.9);
+      transition: outline 0.12s ease, transform 0.12s ease;
     }
 
-    /* highlight any element matching the hovered spot id */
     .highlight {
-      outline: 3px solid #fff;
+      outline: 2px solid #fff !important;
       outline-offset: 1px;
       z-index: 10;
-      transform: scale(1.05);
+      transform: scale(1.06);
     }
 
-    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 800px; }
-    .panel { background: #1a1a1a; border-radius: 6px; padding: 16px; }
-    .panel h3 { font-size: 12px; color: #888; text-transform: uppercase; margin: 0 0 12px; }
-    .panel ol { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8; }
-    .panel ol li { color: #ccc; cursor: pointer; padding: 0 4px; border-radius: 3px; }
-    .panel ol li:hover, .panel ol li.highlight { background: #333; outline: none; transform: none; }
-    .panel ol li b { color: #fff; }
-    .panel .pct { color: #888; margin-left: 8px; }
+    .panel-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(240px, 1fr));
+      gap: 16px;
+      height: min(720px, calc(100vh - var(--chrome)));
+      min-height: 520px;
+    }
+    .panel-grid .card {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .panel-grid .card > .scroll-list {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
 
-    .scrollbox { max-height: 300px; overflow-y: auto; }
-    .scrollbox::-webkit-scrollbar { width: 8px; }
-    .scrollbox::-webkit-scrollbar-track { background: #1a1a1a; }
-    .scrollbox::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+    .scroll-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      counter-reset: rank;
+    }
+    .scroll-list::-webkit-scrollbar { width: 8px; }
+    .scroll-list::-webkit-scrollbar-track { background: transparent; }
+    .scroll-list::-webkit-scrollbar-thumb { background: #3a3a44; border-radius: 4px; }
 
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    thead { position: sticky; top: 0; background: #1a1a1a; }
-    th, td { text-align: left; padding: 4px 8px; }
-    th { color: #888; font-weight: normal; border-bottom: 1px solid #333; }
-    td { color: #ccc; }
-    tbody tr { cursor: pointer; }
-    tbody tr:hover, tbody tr.highlight { background: #333; outline: none; transform: none; }
+    .scroll-list li {
+      counter-increment: rank;
+      min-height: 34px;
+      padding: 7px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .scroll-list li:last-child { border-bottom: none; }
+    .scroll-list li:hover, .scroll-list li.highlight {
+      background: var(--surface-2);
+      outline: none; transform: none;
+    }
+    .scroll-list li::before {
+      content: counter(rank);
+      color: var(--text-faint);
+      font-size: 10px;
+      width: 18px;
+      flex-shrink: 0;
+    }
+    .scroll-list .spot-id {
+      font-weight: 600;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+    .scroll-list .meta {
+      margin-left: auto;
+      color: var(--text-dim);
+      font-size: 11px;
+      text-align: right;
+      white-space: nowrap;
+    }
 
-    #error { color: #f66; }
+    .below { margin-top: 20px; }
+    #chart-card .card-body { padding: 12px 14px; height: 240px; }
+    #history-chart-canvas { width: 100% !important; height: 100% !important; }
+
+    .range {
+      display: inline-flex;
+      gap: 1px;
+      background: var(--border);
+      border-radius: 4px;
+      padding: 1px;
+    }
+    .range button {
+      background: var(--surface);
+      color: var(--text-dim);
+      border: none;
+      padding: 3px 9px;
+      font-family: inherit;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .range button.active { background: var(--accent); color: var(--bg); }
+    .range button:hover:not(.active) { color: var(--text); }
+
+    #error { color: var(--red); margin-top: 16px; font-size: 12px; }
+
+    @media (max-width: 1100px) {
+      :root { --chrome: 230px; }
+      body { padding: 18px 16px 48px; }
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .main {
+        grid-template-columns: 1fr;
+        min-height: 0;
+      }
+      .panel-grid {
+        height: auto;
+        grid-template-rows: repeat(2, minmax(260px, 34vh));
+      }
+    }
+
+    @media (max-width: 680px) {
+      header { align-items: flex-start; gap: 10px; flex-direction: column; }
+      .header-actions { width: 100%; justify-content: space-between; }
+      .kpis { grid-template-columns: 1fr; }
+      .frames {
+        min-height: 0;
+      }
+      .frames .card { min-height: 240px; }
+      .panel-grid { grid-template-columns: 1fr; grid-template-rows: repeat(4, 280px); }
+    }
   </style>
 </head>
 <body>
-  <h1>SmartkingLot</h1>
-  <div id="meta">loading...</div>
-  <div id="stats"></div>
+  <header>
+    <h1>SmartkingLot</h1>
+    <div class="header-actions">
+      <div id="meta">connecting…</div>
+      <button id="theme-toggle" type="button" aria-label="Switch to light mode" title="Switch theme">light</button>
+    </div>
+  </header>
 
-  <h2>live</h2>
-  <div id="map-wrap">
-    <img id="feed" src="/stream" />
+  <div class="kpis">
+    <div class="kpi kpi-primary">
+      <div class="kpi-label">live occupancy</div>
+      <div class="kpi-value" id="kpi-now">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">occupancy rate</div>
+      <div class="kpi-value" id="kpi-pct">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label" id="kpi-avg-label">average (24h)</div>
+      <div class="kpi-value" id="kpi-avg">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label" id="kpi-peak-label">peak (24h)</div>
+      <div class="kpi-value" id="kpi-peak">—</div>
+    </div>
   </div>
 
-  <h2>heatmap (occupancy %)</h2>
-  <div id="heatmap-wrap">
-    <img src="/stream" />
-  </div>
-
-  <h2>spot statistics</h2>
-  <div class="panels">
-    <div class="panel">
-      <h3>most occupied</h3>
-      <ol id="most-occupied"></ol>
-    </div>
-    <div class="panel">
-      <h3>least occupied</h3>
-      <ol id="least-occupied"></ol>
-    </div>
-    <div class="panel">
-      <h3>highest turnover</h3>
-      <ol id="turnover"></ol>
-    </div>
-    <div class="panel">
-      <h3>per-spot detail</h3>
-      <div class="scrollbox">
-        <table id="detail-table">
-          <thead><tr><th>id</th><th>obs</th><th>occupied</th><th>turnover</th></tr></thead>
-          <tbody></tbody>
-        </table>
+  <div class="main">
+    <div>
+      <div class="frames">
+        <div class="card">
+          <div class="card-header"><span class="card-title">live view</span></div>
+          <div class="frame" id="map-wrap"><div class="frame-stage"><img src="/stream" /></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">heatmap</span></div>
+          <div class="frame" id="heatmap-wrap"><div class="frame-stage"><img src="/stream" /></div></div>
+        </div>
       </div>
+    </div>
+
+    <div>
+      <div class="panel-grid">
+        <div class="card">
+          <div class="card-header"><span class="card-title">most occupied</span></div>
+          <ol class="scroll-list" id="most-occupied"></ol>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">least occupied</span></div>
+          <ol class="scroll-list" id="least-occupied"></ol>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">most state changes</span></div>
+          <ol class="scroll-list" id="turnover"></ol>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">all spots</span></div>
+          <ol class="scroll-list" id="all-spots"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="below">
+    <div class="card" id="chart-card">
+      <div class="card-header">
+        <span class="card-title">occupancy over time</span>
+        <span class="range">
+          <button data-hours="1">1h</button>
+          <button data-hours="6">6h</button>
+          <button data-hours="24" class="active">24h</button>
+          <button data-hours="168">7d</button>
+        </span>
+      </div>
+      <div class="card-body"><canvas id="history-chart-canvas"></canvas></div>
     </div>
   </div>
 
@@ -124,47 +431,210 @@
 
   <script>
     function heatColor(pct) {
-      const r = Math.round(pct < 50 ? 99 + (255-99) * (pct/50) : 255);
-      const g = Math.round(pct < 50 ? 153 + (255-153) * (pct/50) : 255 - (255-75) * ((pct-50)/50));
-      const b = Math.round(pct < 50 ? 34 + (0-34) * (pct/50) : 75 - 75 * ((pct-50)/50));
-      return `rgba(${r},${g},${b},0.65)`;
+      const r = Math.round(pct < 50 ? 135 + (255-135) * (pct/50) : 255);
+      const g = Math.round(pct < 50 ? 179 + (255-179) * (pct/50) : 255 - (255-75) * ((pct-50)/50));
+      const b = Math.round(pct < 50 ? 74  + (0-74)   * (pct/50) : 75  - 75 * ((pct-50)/50));
+      return `rgba(${r},${g},${b},0.7)`;
     }
 
-    // hover highlight — toggles .highlight class on every element with the same data-spot-id
     function setupHoverHighlight() {
       document.querySelectorAll('[data-spot-id]').forEach(el => {
-        el.addEventListener('mouseenter', () => {
+        el.onmouseenter = () => {
           const id = el.dataset.spotId;
           document.querySelectorAll(`[data-spot-id="${id}"]`).forEach(m => m.classList.add('highlight'));
-        });
-        el.addEventListener('mouseleave', () => {
+        };
+        el.onmouseleave = () => {
           const id = el.dataset.spotId;
           document.querySelectorAll(`[data-spot-id="${id}"]`).forEach(m => m.classList.remove('highlight'));
-        });
+        };
       });
+    }
+
+    function cssVar(name) {
+      return getComputedStyle(document.body).getPropertyValue(name).trim();
+    }
+
+    function chartTheme() {
+      return {
+        accent: cssVar('--accent'),
+        accentSoft: cssVar('--accent-soft'),
+        surface: cssVar('--surface'),
+        surface2: cssVar('--surface-2'),
+        border: cssVar('--border'),
+        text: cssVar('--text'),
+        textFaint: cssVar('--text-faint'),
+      };
+    }
+
+    function updateChartTheme() {
+      if (!chart) return;
+      const colors = chartTheme();
+      const dataset = chart.data.datasets[0];
+      dataset.borderColor = colors.accent;
+      dataset.backgroundColor = colors.accentSoft;
+      dataset.pointHoverBackgroundColor = colors.accent;
+      chart.options.scales.x.ticks.color = colors.textFaint;
+      chart.options.scales.x.grid.color = colors.surface2;
+      chart.options.scales.y.ticks.color = colors.textFaint;
+      chart.options.scales.y.grid.color = colors.surface2;
+      chart.options.plugins.tooltip.backgroundColor = colors.surface;
+      chart.options.plugins.tooltip.borderColor = colors.border;
+      chart.options.plugins.tooltip.titleColor = colors.text;
+      chart.options.plugins.tooltip.bodyColor = colors.accent;
+      chart.update('none');
+    }
+
+    function applyTheme(theme) {
+      const next = theme === 'light' ? 'light' : 'dark';
+      document.body.dataset.theme = next;
+      localStorage.setItem('smartkinglot-theme', next);
+      const btn = document.getElementById('theme-toggle');
+      btn.textContent = next === 'light' ? 'dark' : 'light';
+      btn.setAttribute('aria-label', next === 'light' ? 'Switch to dark mode' : 'Switch to light mode');
+      updateChartTheme();
+    }
+
+    let lastTimestamp = null;
+    let historyHours  = 24;
+    let chart         = null;
+
+    function formatAgo(timestampStr) {
+      const t  = new Date(timestampStr.replace(' ', 'T') + 'Z');
+      const ms = Date.now() - t.getTime();
+      const s  = Math.max(0, Math.floor(ms / 1000));
+      if (s < 60) return `${s}s ago`;
+      const m = Math.floor(s / 60);
+      if (m < 60) return `${m}m ${s % 60}s ago`;
+      const h = Math.floor(m / 60);
+      return `${h}h ${m % 60}m ago`;
+    }
+
+    function updateMeta() {
+      if (!lastTimestamp) return;
+      document.getElementById('meta').innerHTML = `updated <b>${formatAgo(lastTimestamp)}</b>`;
+    }
+
+    function rangeLabel(hours) {
+      if (hours < 24) return hours + 'h';
+      return (hours / 24) + 'd';
+    }
+
+    function renderChart(history) {
+      const ctx = document.getElementById('history-chart-canvas').getContext('2d');
+      const colors = chartTheme();
+      const points = history.map(h => ({
+        x: new Date(h.timestamp.replace(' ', 'T') + 'Z'),
+        y: h.total > 0 ? (h.occupied / h.total * 100) : 0,
+      }));
+
+      if (chart) {
+        chart.data.datasets[0].data = points;
+        chart.update('none');
+        return;
+      }
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: { datasets: [{
+          data: points,
+          borderColor: colors.accent,
+          backgroundColor: colors.accentSoft,
+          fill: true,
+          tension: 0.25,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointHoverBackgroundColor: colors.accent,
+          borderWidth: 1.5,
+        }] },
+        options: {
+          maintainAspectRatio: false,
+          responsive: true,
+          animation: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            x: {
+              type: 'time',
+              time: { tooltipFormat: 'MMM d, HH:mm', displayFormats: { minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d' } },
+              ticks: { color: colors.textFaint, font: { size: 10, family: 'JetBrains Mono' }, maxRotation: 0, autoSkipPadding: 20 },
+              grid:  { color: colors.surface2, drawTicks: false },
+              border: { display: false },
+            },
+            y: {
+              min: 0, max: 100,
+              ticks: { color: colors.textFaint, font: { size: 10, family: 'JetBrains Mono' }, callback: v => v + '%', stepSize: 25 },
+              grid:  { color: colors.surface2, drawTicks: false },
+              border: { display: false },
+            },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderWidth: 1,
+              titleColor: colors.text,
+              bodyColor: colors.accent,
+              titleFont: { family: 'JetBrains Mono', size: 11 },
+              bodyFont:  { family: 'JetBrains Mono', size: 11 },
+              padding: 10,
+              callbacks: { label: ctx => ctx.parsed.y.toFixed(1) + '% occupied' },
+            },
+          },
+        },
+      });
+    }
+
+    function historyStats(history) {
+      if (!history.length) return { avg: null, peak: null };
+      const pcts = history.map(h => h.total > 0 ? (h.occupied / h.total * 100) : 0);
+      const avg  = pcts.reduce((a, b) => a + b, 0) / pcts.length;
+      const peak = Math.max(...pcts);
+      return { avg, peak };
     }
 
     async function refresh() {
       try {
-        const stateRes = await fetch('/api/state');
-        const state    = await stateRes.json();
-        if (!stateRes.ok) { document.getElementById('error').textContent = state.error; return; }
+        const [stateRes, spotsRes, histRes] = await Promise.all([
+          fetch('/api/state'),
+          fetch('/api/spots'),
+          fetch(`/api/history?hours=${historyHours}`),
+        ]);
 
+        if (!stateRes.ok) {
+          const err = await stateRes.json();
+          document.getElementById('error').textContent = err.error;
+          return;
+        }
         document.getElementById('error').textContent = '';
-        document.getElementById('meta').textContent  = 'last updated: ' + state.timestamp;
 
-        document.getElementById('stats').innerHTML = `
-          <div class="stat"><span>total</span><b>${state.total}</b></div>
-          <div class="stat"><span>occupied</span><b style="color:#e24b4a">${state.occupied}</b></div>
-          <div class="stat"><span>open</span><b style="color:#639922">${state.open}</b></div>
-          <div class="stat"><span>% occupied</span><b>${Math.round(state.occupied / state.total * 100)}%</b></div>
+        const state   = await stateRes.json();
+        const spots   = await spotsRes.json();
+        const history = await histRes.json();
+
+        lastTimestamp = state.timestamp;
+        updateMeta();
+
+        document.getElementById('kpi-now').innerHTML = `
+          <span class="occ">${state.occupied}</span><span class="sep">/</span><span class="free">${state.open}</span>
+          <span class="of">of ${state.total}</span>
         `;
+        const pctNow = state.total ? Math.round(state.occupied / state.total * 100) : 0;
+        document.getElementById('kpi-pct').textContent = pctNow + '%';
 
-        document.querySelectorAll('.box, .heat').forEach(d => d.remove());
+        const { avg, peak } = historyStats(history);
+        const fmt = n => n === null ? '—' : Math.round(n) + '%';
+        const lbl = rangeLabel(historyHours);
+        document.getElementById('kpi-avg').textContent      = fmt(avg);
+        document.getElementById('kpi-peak').textContent     = fmt(peak);
+        document.getElementById('kpi-avg-label').textContent  = `average (${lbl})`;
+        document.getElementById('kpi-peak-label').textContent = `peak (${lbl})`;
+
+        document.documentElement.style.setProperty('--image-ratio', `${state.img_width} / ${state.img_height}`);
+
         const pctX = 100 / state.img_width;
         const pctY = 100 / state.img_height;
 
-        // live boxes
+        const liveFrag = document.createDocumentFragment();
         state.spots.forEach(spot => {
           const box = document.createElement('div');
           box.className     = `box ${spot.occupied ? 'occupied' : 'open'}`;
@@ -176,13 +646,9 @@
           const label = document.createElement('span');
           label.textContent = spot.id;
           box.appendChild(label);
-          document.getElementById('map-wrap').appendChild(box);
+          liveFrag.appendChild(box);
         });
-
-        const spotsRes = await fetch('/api/spots');
-        const spots    = await spotsRes.json();
-
-        // heatmap boxes
+        const heatFrag = document.createDocumentFragment();
         spots.forEach(s => {
           const heat = document.createElement('div');
           heat.className     = 'heat';
@@ -193,28 +659,30 @@
           heat.style.height  = (s.h * pctY) + '%';
           heat.style.background = heatColor(s.occupied_pct);
           heat.textContent   = Math.round(s.occupied_pct) + '%';
-          document.getElementById('heatmap-wrap').appendChild(heat);
+          heatFrag.appendChild(heat);
         });
+        const map  = document.querySelector('#map-wrap .frame-stage');
+        const heat = document.querySelector('#heatmap-wrap .frame-stage');
+        map.querySelectorAll('.box').forEach(d => d.remove());
+        heat.querySelectorAll('.heat').forEach(d => d.remove());
+        map.appendChild(liveFrag);
+        heat.appendChild(heatFrag);
 
-        const liItem = s => `<li data-spot-id="${s.id}">spot <b>${s.id}</b><span class="pct">${s.occupied_pct.toFixed(1)}% (${s.occupied_count}/${s.observations})</span></li>`;
-        const liTurn = s => `<li data-spot-id="${s.id}">spot <b>${s.id}</b><span class="pct">${s.turnover} changes</span></li>`;
+        const liItem = s => `<li data-spot-id="${s.id}"><span class="spot-id">${s.id}</span><span class="meta">${s.occupied_pct.toFixed(0)}%  ${s.occupied_count}/${s.observations}</span></li>`;
+        const liTurn = s => `<li data-spot-id="${s.id}"><span class="spot-id">${s.id}</span><span class="meta">${s.turnover} changes</span></li>`;
+        const liAll = s => `<li data-spot-id="${s.id}"><span class="spot-id">${s.id}</span><span class="meta">${s.observations} samples  ${s.occupied_count} occ ${s.occupied_pct.toFixed(0)}%  ${s.turnover} changes</span></li>`;
 
         document.getElementById('most-occupied').innerHTML =
-          [...spots].sort((a,b) => b.occupied_pct - a.occupied_pct).slice(0, 5).map(liItem).join('');
+          [...spots].sort((a,b) => b.occupied_pct - a.occupied_pct).map(liItem).join('');
         document.getElementById('least-occupied').innerHTML =
-          [...spots].sort((a,b) => a.occupied_pct - b.occupied_pct).slice(0, 5).map(liItem).join('');
+          [...spots].sort((a,b) => a.occupied_pct - b.occupied_pct).map(liItem).join('');
         document.getElementById('turnover').innerHTML =
-          [...spots].sort((a,b) => b.turnover - a.turnover).slice(0, 5).map(liTurn).join('');
+          [...spots].sort((a,b) => b.turnover - a.turnover).map(liTurn).join('');
 
-        document.querySelector('#detail-table tbody').innerHTML =
-          [...spots].sort((a,b) => a.id - b.id).map(s => `
-            <tr data-spot-id="${s.id}">
-              <td>${s.id}</td>
-              <td>${s.observations}</td>
-              <td>${s.occupied_count} (${s.occupied_pct.toFixed(0)}%)</td>
-              <td>${s.turnover}</td>
-            </tr>`).join('');
+        document.getElementById('all-spots').innerHTML =
+          [...spots].sort((a,b) => a.id - b.id).map(liAll).join('');
 
+        renderChart(history);
         setupHoverHighlight();
 
       } catch (e) {
@@ -222,8 +690,23 @@
       }
     }
 
+    document.querySelectorAll('.range button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.range button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        historyHours = parseInt(btn.dataset.hours);
+        refresh();
+      });
+    });
+
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      applyTheme(document.body.dataset.theme === 'light' ? 'dark' : 'light');
+    });
+
+    applyTheme(localStorage.getItem('smartkinglot-theme') || 'dark');
     refresh();
     setInterval(refresh, 10000);
+    setInterval(updateMeta, 1000);
   </script>
 </body>
 </html>

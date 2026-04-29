@@ -1,6 +1,21 @@
+"""
+fake-stream.py
+
+Two modes:
+
+  1. Manual:
+       python3 fake-stream.py lotEmpty.jpg
+     Type a filename at the > prompt to swap frames.
+
+  2. Auto-rotate (random image every N seconds):
+       python3 fake-stream.py --auto
+     Picks a random image from lot1.jpg-lot4.jpg every 30s.
+"""
+
 import sys
 import os
 import time
+import random
 import socket
 import threading
 import cv2
@@ -8,6 +23,10 @@ import cv2
 HOST = '0.0.0.0'
 PORT = 8080
 FPS  = 1
+
+# auto mode config
+AUTO_INTERVAL  = 30
+AUTO_PATTERNS  = ['lot1.jpg', 'lot2.jpg', 'lot3.jpg', 'lot4.jpg']
 
 current_frame = None
 frame_lock    = threading.Lock()
@@ -58,24 +77,49 @@ def run_mjpeg_server():
     server.bind((HOST, PORT))
     server.listen(5)
     print(f'[fake-stream] MJPEG at http://{HOST}:{PORT}/feed')
-    print(f'[fake-stream] Type a filename to switch frames')
     while True:
         conn, _ = server.accept()
         threading.Thread(target=stream_client, args=(conn,), daemon=True).start()
 
 
+def auto_rotate_loop():
+    """Pick a random image from AUTO_PATTERNS every AUTO_INTERVAL seconds."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    available  = [f for f in AUTO_PATTERNS if os.path.exists(os.path.join(script_dir, f))]
+
+    if not available:
+        print(f'[fake-stream] No images found matching {AUTO_PATTERNS} in {script_dir}')
+        return
+
+    print(f'[fake-stream] Auto-rotating every {AUTO_INTERVAL}s among: {available}')
+    last = None
+    while True:
+        # pick a random image, but try not to repeat the same one twice in a row
+        choices = [f for f in available if f != last] or available
+        pick = random.choice(choices)
+        try:
+            switch_frame(os.path.join(script_dir, pick))
+            last = pick
+        except Exception as e:
+            print(f'[fake-stream] Auto-rotate error: {e}')
+        time.sleep(AUTO_INTERVAL)
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print('Usage: python3 fake-stream.py <image>')
+        print('       python3 fake-stream.py --auto')
         sys.exit(1)
 
-    switch_frame(sys.argv[1])
-    threading.Thread(target=run_mjpeg_server, daemon=True).start()
+    if sys.argv[1] == '--auto':
+        # show first available image immediately so the stream isn't blank
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        first = next((f for f in AUTO_PATTERNS if os.path.exists(os.path.join(script_dir, f))), None)
+        if first:
+            switch_frame(os.path.join(script_dir, first))
 
-    while True:
-        path = input('> ').strip()
-        if path:
-            try:
-                switch_frame(path)
-            except Exception as e:
-                print(f'Error: {e}')
+        threading.Thread(target=auto_rotate_loop, daemon=True).start()
+        run_mjpeg_server()
+    else:
+        switch_frame(sys.argv[1])
+        run_mjpeg_server()
