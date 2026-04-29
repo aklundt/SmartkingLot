@@ -1413,13 +1413,28 @@
       );
       
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to save user');
+        // Try to parse JSON error, fallback to status text
+        let errorMessage = `Failed to save user (${res.status})`;
+        try {
+          const data = await res.json();
+          errorMessage = data.error || errorMessage;
+        } catch (e) {
+          // Response wasn't JSON, use status text
+          const text = await res.text();
+          console.error('Non-JSON error response:', text);
+          if (res.status === 403) {
+            errorMessage = 'Access denied - Admin privileges required';
+          } else if (res.status === 401) {
+            errorMessage = 'Not logged in - Please refresh and log in again';
+          }
+        }
+        throw new Error(errorMessage);
       }
       
       closeUserModal();
       loadUsers();
     } catch (err) {
+      console.error('[user] Save failed:', err);
       errorDiv.textContent = err.message;
       errorDiv.style.display = 'block';
     }
