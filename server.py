@@ -202,6 +202,47 @@ def get_current_user():
     })
 
 
+@app.route('/me', methods=['PUT'])
+@login_required
+def update_current_user():
+    """Update current user's email or password"""
+    body = request.get_json()
+    
+    email = body.get('email')
+    current_password = body.get('current_password')
+    new_password = body.get('new_password')
+    
+    # Get current user data to verify password
+    user_data = db.get_user_by_id(current_user.id)
+    
+    # If changing password, verify current password first
+    if new_password:
+        if not current_password:
+            return jsonify({'error': 'Current password required to change password'}), 400
+        
+        if not db.verify_password(user_data, current_password):
+            return jsonify({'error': 'Current password is incorrect'}), 401
+    
+    # Update email and/or password
+    success = db.update_user(
+        current_user.id,
+        email=email,
+        password=new_password if new_password else None
+    )
+    
+    if not success:
+        return jsonify({'error': 'Failed to update profile'}), 400
+    
+    # Return updated user info
+    updated_user = db.get_user_by_id(current_user.id)
+    return jsonify({
+        'id': updated_user['id'],
+        'username': updated_user['username'],
+        'email': updated_user.get('email'),
+        'is_admin': bool(updated_user.get('is_admin', 0))
+    })
+
+
 # ============================================================
 # User management routes (admin only)
 # ============================================================
