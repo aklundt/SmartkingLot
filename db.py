@@ -85,6 +85,19 @@ def init_db():
     except:
         pass
 
+    # API Keys table for detector authentication
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS api_keys (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            key_hash    TEXT NOT NULL,
+            name        TEXT NOT NULL,
+            description TEXT,
+            created_at  TEXT DEFAULT (datetime('now')),
+            last_used   TEXT,
+            active      INTEGER NOT NULL DEFAULT 1
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
@@ -286,3 +299,76 @@ def delete_user(user_id):
 def verify_password(user, password):
     """Verify a user's password"""
     return check_password_hash(user['password_hash'], password)
+
+
+# ============================================================
+# API Key management
+# ============================================================
+
+def create_api_key(name, description=None):
+    """Create a new API key for detector authentication"""
+    import secrets
+    api_key = 'sk_' + secrets.token_urlsafe(32)
+    
+    conn = get_conn()
+    try:
+        conn.execute(
+            'INSERT INTO api_keys (key_hash, name, description) VALUES (?, ?, ?)',
+            (generate_password_hash(api_key), name, description)
+        )
+        conn.commit()
+        conn.close()
+        return api_key  # Return the plain key only once
+    except:
+        conn.close()
+        return None
+
+
+def verify_api_key(api_key):
+    """Verify an API key and return key info if valid"""
+    if not api_key or not api_key.startswith('sk_'):
+        return None
+    
+    conn = get_conn()
+    rows = conn.execute('SELECT * FROM api_keys WHERE active = 1').fetchall()
+    
+    for row in rows:
+        key_data = dict(row)
+        if check_password_hash(key_data['key_hash'], api_key):
+            # Update last_used timestamp
+            conn.execute(
+                'UPDATE api_keys SET last_used = datetime("now") WHERE id = ?',
+                (key_data['id'],)
+            )
+            conn.commit()
+            conn.close()
+            return key_data
+    
+    conn.close()
+    return None
+
+
+def get_all_api_keys():
+    """Get all API keys (without the actual key values)"""
+    conn = get_conn()
+    rows = conn.execute(
+        'SELECT id, name, description, created_at, last_used, active FROM api_keys ORDER BY created_at DESC'
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def revoke_api_key(key_id):
+    """Revoke (deactivate) an API key"""
+    conn = get_conn()
+    conn.execute('UPDATE api_keys SET active = 0 WHERE id = ?', (key_id,))
+    conn.commit()
+    conn.close()
+
+
+def delete_api_key(key_id):
+    """Permanently delete an API key"""
+    conn = get_conn()
+    conn.execute('DELETE FROM api_keys WHERE id = ?', (key_id,))
+    conn.commit()
+    conn.close()

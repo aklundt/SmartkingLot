@@ -289,3 +289,87 @@ If something isn't working:
 5. Double-check the port configuration
 
 Good luck! 🚀
+
+---
+
+## API Key Authentication for Detector
+
+### Why API Keys?
+
+The detector runs as a background service and needs to authenticate with your Flask API. API keys provide secure, session-independent authentication perfect for automated services.
+
+### Creating Your First API Key
+
+**Option 1 - Command Line (Easiest):**
+
+```bash
+python create_api_key.py
+```
+
+Follow the prompts to create a key, then add it to your `.env` file:
+
+```bash
+API_KEY=sk_your-generated-key-here
+```
+
+**Option 2 - Web Interface (if you're already logged in as admin):**
+
+1. Log into the dashboard
+2. Click "API Keys" in the sidebar
+3. Click "Create API Key"
+4. Give it a name like "Main Detector"
+5. Copy the key when shown (you won't see it again!)
+6. Add it to your `.env` file
+
+### Using the API Key
+
+The detector automatically reads `API_KEY` from your `.env` file and sends it with every request.
+
+**In your .env file:**
+```bash
+API_KEY=sk_abc123...
+STREAM_URL=http://localhost:8080/feed
+API_URL=http://localhost:5000/api/snapshot
+```
+
+### Managing API Keys
+
+**Via Web Interface (Admin Panel):**
+- View all keys, when they were created, and last used
+- Revoke keys (disables them without deleting)
+- Delete keys permanently
+- Create new keys with descriptions
+
+**What You Can Track:**
+- Key name and description
+- Creation date
+- Last used timestamp
+- Active/Revoked status
+
+### Security Best Practices
+
+1. **Never commit API keys to git** - Keep them in `.env` only
+2. **One key per detector** - Create separate keys if you have multiple detectors
+3. **Rotate keys regularly** - Create new keys and revoke old ones periodically
+4. **Revoke compromised keys immediately** - Better safe than sorry
+5. **Use descriptive names** - "Detector #1 - Parking Lot A" is better than "key1"
+
+### Troubleshooting API Key Issues
+
+**Error: "API key required"**
+- Make sure `API_KEY` is in your `.env` file
+- Restart `detector.py` after adding the key
+
+**Error: "Invalid API key"**
+- Check that you copied the entire key (starts with `sk_`)
+- Verify the key hasn't been revoked in the admin panel
+- Try creating a new key
+
+**Error: "API_KEY not found in .env file!"**
+- The detector checks for `API_KEY` on startup
+- Add it to your `.env` file and restart
+
+**Key shows "Never" for Last Used:**
+- The detector hasn't successfully sent any snapshots yet
+- Check detector logs for connection errors
+

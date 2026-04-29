@@ -52,6 +52,27 @@ def admin_required(f):
     return decorated_function
 
 
+def api_key_required(f):
+    """Decorator to require valid API key (for detector endpoints)"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization', '').replace('Bearer ', '')
+        
+        if not api_key:
+            return jsonify({'error': 'API key required'}), 401
+        
+        key_data = db.verify_api_key(api_key)
+        if not key_data:
+            return jsonify({'error': 'Invalid API key'}), 401
+        
+        # Store key info in request context for logging
+        request.api_key_name = key_data['name']
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+
 # ============================================================
 # Detection utility functions
 # ============================================================
@@ -264,11 +285,64 @@ def delete_user(user_id):
 
 
 # ============================================================
+# API Key management routes (admin only)
+# ============================================================
+
+@app.route('/api/keys', methods=['GET'])
+@admin_required
+def get_api_keys():
+    """List all API keys"""
+    keys = db.get_all_api_keys()
+    return jsonify(keys)
+
+
+@app.route('/api/keys', methods=['POST'])
+@admin_required
+def create_api_key():
+    """Create a new API key"""
+    body = request.get_json()
+    
+    name = body.get('name', '').strip()
+    description = body.get('description', '').strip() or None
+    
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+    
+    api_key = db.create_api_key(name, description)
+    
+    if not api_key:
+        return jsonify({'error': 'Failed to create API key'}), 500
+    
+    return jsonify({
+        'api_key': api_key,
+        'name': name,
+        'description': description,
+        'warning': 'Save this key now - it will not be shown again!'
+    }), 201
+
+
+@app.route('/api/keys/<int:key_id>', methods=['DELETE'])
+@admin_required
+def delete_api_key(key_id):
+    """Delete an API key"""
+    db.delete_api_key(key_id)
+    return jsonify({'success': True})
+
+
+@app.route('/api/keys/<int:key_id>/revoke', methods=['POST'])
+@admin_required
+def revoke_api_key(key_id):
+    """Revoke (deactivate) an API key"""
+    db.revoke_api_key(key_id)
+    return jsonify({'success': True})
+
+
+# ============================================================
 # Parking API routes (protected)
 # ============================================================
 
 @app.route('/api/snapshot', methods=['POST'])
-@login_required
+@api_key_required
 def post_snapshot():
     body       = request.get_json(force=True)
     detections = body.get('detections', [])
@@ -302,7 +376,7 @@ def post_snapshot():
 
     occ   = sum(1 for v in spot_states.values() if v)
     open_ = len(spot_states) - occ
-    print(f'[api] Snapshot {snapshot_id}: {occ} occupied / {open_} open')
+    print(f'[api] Snapshot {snapshot_id} from [{request.api_key_name}]: {occ} occupied / {open_} open')
 
     return jsonify({'snapshot_id': snapshot_id, 'occupied': occ, 'open': open_}), 201
 
