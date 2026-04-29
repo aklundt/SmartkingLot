@@ -1,0 +1,1388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SmartkingLot &middot; Dashboard Overview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:        #f6f8fb;
+      --surface:   #ffffff;
+      --ink:       #0f172a;
+      --ink-soft:  #475569;
+      --muted:     #94a3b8;
+      --border:    #e5e8ef;
+      --brand:     #0ea5a4;    /* teal primary */
+      --brand-ink: #0b7f7e;
+      --brand-50:  #ecfefe;
+      --open:      #10b981;
+      --occupied:  #ef4444;
+      --amber:     #f59e0b;
+      --shadow:    0 1px 2px rgba(15,23,42,.04), 0 8px 24px -12px rgba(15,23,42,.10);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* -------- Layout -------- */
+    .app {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    /* -------- Sidebar -------- */
+    .sidebar {
+      background: #0f172a;
+      color: #cbd5e1;
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px 20px;
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .brand .logo {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0ea5a4, #14b8a6);
+      display: grid; place-items: center;
+      color: #fff; font-weight: 800;
+      box-shadow: 0 4px 12px rgba(14,165,164,.4);
+    }
+    .brand .brand-text { font-size: 15px; }
+    .brand .brand-text small {
+      display: block;
+      color: #94a3b8;
+      font-weight: 500;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .nav-section {
+      padding: 14px 10px 6px;
+      color: #64748b;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: #cbd5e1;
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .nav-item:hover { background: #1e293b; color: #fff; }
+    .nav-item.active {
+      background: rgba(14,165,164,.15);
+      color: #5eead4;
+    }
+    .nav-item svg { width: 16px; height: 16px; }
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px;
+      border-top: 1px solid #1e293b;
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    /* -------- Main -------- */
+    .main { padding: 0; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 5;
+    }
+    .topbar-title h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .topbar-title p {
+      margin: 2px 0 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+    }
+    .topbar-actions {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted);
+      box-shadow: 0 0 0 3px rgba(148,163,184,.18);
+    }
+    .status-dot.live { background: var(--open); box-shadow: 0 0 0 3px rgba(16,185,129,.2); animation: pulse 2s infinite; }
+    .status-dot.down { background: var(--occupied); box-shadow: 0 0 0 3px rgba(239,68,68,.2); }
+    @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .55 } }
+    .status-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #f1f5f9;
+      color: var(--ink-soft);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .btn {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: background .15s;
+    }
+    .btn:hover { background: var(--brand-ink); }
+    .btn.ghost {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--border);
+    }
+    .btn.ghost:hover { background: #f8fafc; }
+
+    /* -------- Login screen -------- */
+    .login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+    .login-card {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    }
+    .login-card .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      color: var(--ink);
+      padding: 0;
+    }
+    .login-card .brand .logo {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0ea5a4, #14b8a6);
+      display: grid; place-items: center;
+      color: #fff; font-weight: 800;
+      font-size: 24px;
+      box-shadow: 0 6px 16px rgba(14,165,164,.4);
+    }
+    .login-card .brand-text {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .login-card .brand-text small {
+      display: block;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .login-form label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .login-form input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border .15s;
+    }
+    .login-form input:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(14,165,164,.1);
+    }
+    .login-form .btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 12px;
+      justify-content: center;
+    }
+    .login-error {
+      background: #fef2f2;
+      color: #b91c1c;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+    .login-error.show { display: block; }
+    
+    .content { padding: 28px 32px 48px; max-width: 1400px; }
+
+    /* -------- KPI cards -------- */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .kpi-card .label {
+      color: var(--ink-soft);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .kpi-card .value {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-top: 8px;
+      line-height: 1;
+    }
+    .kpi-card .value .unit {
+      font-size: 15px;
+      color: var(--muted);
+      font-weight: 500;
+      margin-left: 4px;
+    }
+    .kpi-card .sub {
+      margin-top: 10px;
+      color: var(--ink-soft);
+      font-size: 12px;
+    }
+    .icon-pill {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: grid; place-items: center;
+      background: var(--brand-50);
+      color: var(--brand-ink);
+    }
+    .icon-pill.open     { background: #ecfdf5; color: #047857; }
+    .icon-pill.occupied { background: #fef2f2; color: #b91c1c; }
+    .icon-pill.rate     { background: #fff7ed; color: #c2410c; }
+
+    /* -------- Section layout -------- */
+    .row {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .card-sub {
+      color: var(--ink-soft);
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    /* -------- Spot map -------- */
+    .spot-map {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 10px;
+      background: repeating-linear-gradient(45deg, #f8fafc, #f8fafc 10px, #f1f5f9 10px, #f1f5f9 20px) #0f172a;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .spot-map .feed {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #0f172a;
+    }
+    .spot-map svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+    }
+    .spot-map .feed.hidden { display: none; }
+    .spot {
+      transition: transform .15s;
+    }
+    .legend {
+      display: flex; gap: 18px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--ink-soft);
+    }
+    .legend-dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    /* -------- History chart -------- */
+    .chart-box {
+      position: relative;
+      height: 280px;
+    }
+    .chart-controls {
+      display: inline-flex;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .chart-controls button {
+      background: transparent;
+      border: 0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      cursor: pointer;
+    }
+    .chart-controls button.active {
+      background: #fff;
+      color: var(--ink);
+      box-shadow: 0 1px 2px rgba(15,23,42,.08);
+    }
+
+    /* -------- Info grid -------- */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .info-item .k {
+      color: var(--ink-soft);
+      font-size: 12px;
+      letter-spacing: 0.02em;
+    }
+    .info-item .v {
+      margin-top: 2px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    /* -------- Banner -------- */
+    .banner {
+      background: linear-gradient(135deg, #0ea5a4, #0d9488);
+      color: #fff;
+      border-radius: 12px;
+      padding: 22px 26px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 10px 30px -12px rgba(13,148,136,.5);
+    }
+    .banner h3 { margin: 0 0 4px; font-size: 17px; font-weight: 700; }
+    .banner p  { margin: 0; opacity: .9; font-size: 13px; max-width: 600px; }
+    .banner .btn-on-brand {
+      background: rgba(255,255,255,.15);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.25);
+    }
+    .banner .btn-on-brand:hover { background: rgba(255,255,255,.25); }
+
+    /* -------- Empty state -------- */
+    .empty {
+      text-align: center;
+      color: var(--ink-soft);
+      padding: 40px 20px;
+      font-size: 13px;
+    }
+    .empty strong { color: var(--ink); display: block; margin-bottom: 4px; font-size: 14px;}
+    .empty code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    /* -------- Responsive -------- */
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .content, .topbar { padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ============================================================
+       LOGIN SCREEN
+       ============================================================ -->
+  <div class="login-screen" id="login-screen">
+    <div class="login-card">
+      <div class="brand">
+        <div class="logo">S</div>
+        <div class="brand-text">
+          SmartParkingLot
+          <small>Dashboard</small>
+        </div>
+      </div>
+      <form class="login-form" onsubmit="return handleLogin(event)">
+        <div>
+          <label for="username">Username</label>
+          <input type="text" id="username" required autocomplete="username" />
+        </div>
+        <div>
+          <label for="password">Password</label>
+          <input type="password" id="password" required autocomplete="current-password" />
+        </div>
+        <div class="login-error" id="login-error"></div>
+        <button type="submit" class="btn">Log in</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MAIN DASHBOARD (hidden until logged in)
+       ============================================================ -->
+<div class="app" id="dashboard" style="display: none;">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">S</div>
+      <div class="brand-text">
+        SmartkingLot
+        <small>Admin Console</small>
+      </div>
+    </div>
+
+    <div class="nav-section">Monitoring</div>
+    <a class="nav-item active">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+      Overview
+    </a>
+    <a class="nav-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m10 10V7m0 10a2 2 0 002 2h.5a.5.5 0 00.5-.5V5.5a.5.5 0 00-.5-.5H21a2 2 0 00-2 2v10z"/></svg>
+      Live Feed
+    </a>
+    <a class="nav-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      History
+    </a>
+
+    <div class="nav-section">Management</div>
+    <a class="nav-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
+      Spots Registry
+    </a>
+    <a class="nav-item" id="users-nav" style="display:none;" onclick="showUsersPanel()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      Users
+    </a>
+    <a class="nav-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Settings
+    </a>
+
+    <div class="sidebar-footer">
+      <div style="margin-bottom:10px;">v0.1.0 · Team SmartkingLot</div>
+      <button class="btn ghost" style="width:100%;font-size:12px;padding:7px 10px;" onclick="handleLogout()">Log out</button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>Overview</h1>
+        <p>Real-time parking lot occupancy &middot; <span id="last-updated">&mdash;</span></p>
+      </div>
+      <div class="topbar-actions">
+        <span class="status-chip">
+          <span id="status-dot" class="status-dot"></span>
+          <span id="status-text">Connecting&hellip;</span>
+        </span>
+        <button class="btn ghost" id="refresh-btn" title="Refresh now">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a9 9 0 0115.4-5.6L20 4M20 15a9 9 0 01-15.4 5.6L4 20"/></svg>
+          Refresh
+        </button>
+      </div>
+    </header>
+
+    <section class="content">
+
+      <!-- Welcome banner -->
+      <div class="banner">
+        <div>
+          <h3>Welcome back, operator.</h3>
+          <p>SmartkingLot is watching your lot with YOLOv8 computer vision. Spots are tallied every 60 seconds straight from the camera feed — no sensors needed.</p>
+        </div>
+        <button class="btn btn-on-brand">View live camera</button>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="kpi-grid">
+        <div class="card kpi-card">
+          <div class="label">
+            <span class="icon-pill">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </span>
+            Total spots
+          </div>
+          <div class="value" id="kpi-total">&mdash;</div>
+          <div class="sub">Registered from camera feed</div>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="label">
+            <span class="icon-pill open">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </span>
+            Open
+          </div>
+          <div class="value" id="kpi-open" style="color: var(--open)">&mdash;</div>
+          <div class="sub" id="kpi-open-sub">Available right now</div>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="label">
+            <span class="icon-pill occupied">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 105.636 5.636a9 9 0 0012.728 12.728zM5.636 5.636l12.728 12.728"/></svg>
+            </span>
+            Occupied
+          </div>
+          <div class="value" id="kpi-occupied" style="color: var(--occupied)">&mdash;</div>
+          <div class="sub" id="kpi-occupied-sub">Vehicles detected</div>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="label">
+            <span class="icon-pill rate">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </span>
+            Occupancy rate
+          </div>
+          <div class="value"><span id="kpi-rate">&mdash;</span><span class="unit">%</span></div>
+          <div class="sub" id="kpi-rate-sub">Of registered spots</div>
+        </div>
+      </div>
+
+      <!-- Spot map + Lot info -->
+      <div class="row">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Live spot map</h2>
+              <div class="card-sub">Detections from the most recent camera snapshot</div>
+            </div>
+          </div>
+          <div class="spot-map" id="spot-map">
+            <img id="feed-img" class="feed hidden" alt="Live camera feed" />
+            <svg id="spot-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet"></svg>
+          </div>
+          <div class="legend">
+            <span><span class="legend-dot" style="background:var(--occupied)"></span>Occupied</span>
+            <span><span class="legend-dot" style="background:var(--open)"></span>Open</span>
+            <span><span class="legend-dot" style="background:var(--muted)"></span>Unknown</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Lot details</h2>
+          <div class="card-sub">System configuration for this camera</div>
+          <div class="info-grid" style="margin-top: 6px">
+            <div class="info-item">
+              <div class="k">Lot name</div>
+              <div class="v">Main Lot</div>
+            </div>
+            <div class="info-item">
+              <div class="k">Camera ID</div>
+              <div class="v">cam-01</div>
+            </div>
+            <div class="info-item">
+              <div class="k">Frame size</div>
+              <div class="v" id="info-frame">&mdash;</div>
+            </div>
+            <div class="info-item">
+              <div class="k">Detector</div>
+              <div class="v">YOLOv8 nano</div>
+            </div>
+            <div class="info-item">
+              <div class="k">Scan interval</div>
+              <div class="v">60 s</div>
+            </div>
+            <div class="info-item">
+              <div class="k">Last snapshot</div>
+              <div class="v" id="info-snapshot">&mdash;</div>
+            </div>
+            <div class="info-item">
+              <div class="k">Confidence</div>
+              <div class="v">&ge; 0.35</div>
+            </div>
+            <div class="info-item">
+              <div class="k">API status</div>
+              <div class="v" id="info-api">&mdash;</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History chart -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Occupancy history</h2>
+            <div class="card-sub">Occupied vs open spots over time</div>
+          </div>
+          <div class="chart-controls" id="range-ctrl">
+            <button data-hours="1">1h</button>
+            <button data-hours="6">6h</button>
+            <button data-hours="24" class="active">24h</button>
+            <button data-hours="168">7d</button>
+          </div>
+        </div>
+        <div class="chart-box">
+          <canvas id="history-chart"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         USERS MANAGEMENT PANEL (Admin only, hidden by default)
+         ============================================================ -->
+    <section class="content" id="users-panel" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:700;">User Management</h1>
+          <p style="margin:4px 0 0;color:var(--ink-soft);font-size:14px;">Manage user accounts and permissions</p>
+        </div>
+        <button class="btn" onclick="showCreateUserModal()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Add User
+        </button>
+      </div>
+
+      <div class="card">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Username</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Email</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Role</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Created</th>
+              <th style="text-align:right;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <tr><td colspan="5" style="padding:24px 0;text-align:center;color:var(--muted);">Loading users...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Create/Edit User Modal -->
+    <div id="user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;">
+      <div class="card" style="max-width:500px;width:90%;max-height:90vh;overflow-y:auto;">
+        <h2 style="margin:0 0 20px;font-size:18px;font-weight:600;" id="modal-title">Create User</h2>
+        
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;">Username</label>
+            <input type="text" id="modal-username" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+          </div>
+          
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;">Email (optional)</label>
+            <input type="email" id="modal-email" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+          </div>
+          
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;">Password</label>
+            <input type="password" id="modal-password" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+            <p style="margin:4px 0 0;font-size:12px;color:var(--muted);" id="password-hint">Leave blank to keep current password</p>
+          </div>
+          
+          <div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="modal-is-admin" style="width:16px;height:16px;" />
+              <span style="font-size:13px;font-weight:500;">Admin privileges</span>
+            </label>
+          </div>
+          
+          <div id="modal-error" style="display:none;background:#fef2f2;color:#b91c1c;padding:10px 12px;border-radius:8px;font-size:13px;"></div>
+          
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button class="btn" onclick="saveUser()" style="flex:1;">Save</button>
+            <button class="btn ghost" onclick="closeUserModal()" style="flex:1;">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // ============================================================
+  // Configuration
+  // ============================================================
+  const API_BASE = (() => {
+    // If served from the same host as the API, use relative URLs.
+    // Otherwise default to localhost:5001.
+    if (location.hostname && location.hostname !== '' && location.protocol.startsWith('http')) {
+      return `${location.protocol}//${location.hostname}:5001`;
+    }
+    return 'http://localhost:5001';
+  })();
+  const STREAM_URL = (() => {
+    if (location.hostname && location.hostname !== '' && location.protocol.startsWith('http')) {
+      return `${location.protocol}//${location.hostname}:8080/feed`;
+    }
+    return 'http://localhost:8080/feed';
+  })();
+  const REFRESH_MS = 30_000;
+
+  // ============================================================
+  // State
+  // ============================================================
+  let historyChart = null;
+  let currentRangeHours = 24;
+  let refreshTimer = null;
+
+  // ============================================================
+  // DOM refs
+  // ============================================================
+  const $ = (id) => document.getElementById(id);
+
+  // ============================================================
+  // Formatting helpers
+  // ============================================================
+  const fmtTime = (iso) => {
+    if (!iso) return '—';
+    // SQLite datetime('now') returns UTC in "YYYY-MM-DD HH:MM:SS"
+    const d = new Date(iso.includes('T') ? iso : iso.replace(' ', 'T') + 'Z');
+    if (isNaN(d)) return iso;
+    return d.toLocaleString(undefined, {
+      month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+  };
+  const fmtRelative = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso.includes('T') ? iso : iso.replace(' ', 'T') + 'Z');
+    if (isNaN(d)) return iso;
+    const diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 60)     return `${Math.round(diff)}s ago`;
+    if (diff < 3600)   return `${Math.round(diff / 60)}m ago`;
+    if (diff < 86400)  return `${Math.round(diff / 3600)}h ago`;
+    return d.toLocaleDateString();
+  };
+
+  // ============================================================
+  // Connection status
+  // ============================================================
+  function setStatus(state, msg) {
+    const dot = $('status-dot');
+    const txt = $('status-text');
+    dot.className = 'status-dot ' + (state === 'live' ? 'live' : state === 'down' ? 'down' : '');
+    txt.textContent = msg;
+    $('info-api').textContent = state === 'live' ? 'Online' : state === 'down' ? 'Unreachable' : 'Connecting…';
+    $('info-api').style.color = state === 'live' ? 'var(--open)' : state === 'down' ? 'var(--occupied)' : '';
+  }
+
+  // ============================================================
+  // Fetch current state
+  // ============================================================
+  async function fetchState() {
+    const res = await fetch(`${API_BASE}/api/state`, { 
+      cache: 'no-store',
+      credentials: 'include'
+    });
+    if (res.status === 401) {
+      showLogin();
+      throw new Error('Unauthorized');
+    }
+    if (res.status === 404) return { empty: true };
+    if (!res.ok) throw new Error(`State HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async function fetchHistory(hours) {
+    const res = await fetch(`${API_BASE}/api/history?hours=${hours}`, { 
+      cache: 'no-store',
+      credentials: 'include'
+    });
+    if (res.status === 401) {
+      showLogin();
+      throw new Error('Unauthorized');
+    }
+    if (!res.ok) throw new Error(`History HTTP ${res.status}`);
+    return res.json();
+  }
+
+  // ============================================================
+  // Render KPI cards
+  // ============================================================
+  function renderKpis(state) {
+    if (!state || state.empty) {
+      $('kpi-total').textContent    = '0';
+      $('kpi-open').textContent     = '0';
+      $('kpi-occupied').textContent = '0';
+      $('kpi-rate').textContent     = '0';
+      $('kpi-open-sub').textContent = 'No data yet';
+      return;
+    }
+    const total    = state.total    ?? 0;
+    const open     = state.open     ?? 0;
+    const occupied = state.occupied ?? 0;
+    const rate     = total > 0 ? Math.round((occupied / total) * 100) : 0;
+
+    $('kpi-total').textContent    = total;
+    $('kpi-open').textContent     = open;
+    $('kpi-occupied').textContent = occupied;
+    $('kpi-rate').textContent     = rate;
+
+    $('kpi-open-sub').textContent     = open === 0    ? 'Lot is full'    : `${open} spot${open === 1 ? '' : 's'} available`;
+    $('kpi-occupied-sub').textContent = `${Math.round((occupied/Math.max(total,1))*100)}% of lot in use`;
+    $('kpi-rate-sub').textContent     = rate >= 90 ? 'Near capacity' : rate >= 50 ? 'Moderately full' : 'Plenty of room';
+  }
+
+  // ============================================================
+  // Render spot map
+  // ============================================================
+  function renderMap(state) {
+    const svg = $('spot-svg');
+    svg.innerHTML = '';
+    if (!state || state.empty || !state.spots) {
+      const msg = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      msg.setAttribute('x', '50%');
+      msg.setAttribute('y', '50%');
+      msg.setAttribute('text-anchor', 'middle');
+      msg.setAttribute('dominant-baseline', 'middle');
+      msg.setAttribute('fill', '#94a3b8');
+      msg.setAttribute('font-size', '24');
+      msg.setAttribute('font-family', 'Inter, sans-serif');
+      msg.textContent = 'Waiting for first snapshot…';
+      svg.appendChild(msg);
+      return;
+    }
+
+    const w = state.img_width  || 1280;
+    const h = state.img_height || 720;
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+    state.spots.forEach((s, i) => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', 'spot');
+
+      const r = Math.min(w, h) * 0.028;
+      const color = s.occupied ? '#ef4444' : '#10b981';
+
+      // Halo
+      const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      halo.setAttribute('cx', s.cx);
+      halo.setAttribute('cy', s.cy);
+      halo.setAttribute('r', r * 1.6);
+      halo.setAttribute('fill', color);
+      halo.setAttribute('opacity', '0.15');
+      g.appendChild(halo);
+
+      // Core
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', s.cx);
+      c.setAttribute('cy', s.cy);
+      c.setAttribute('r', r);
+      c.setAttribute('fill', color);
+      c.setAttribute('stroke', '#fff');
+      c.setAttribute('stroke-width', '2');
+      g.appendChild(c);
+
+      // ID label
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t.setAttribute('x', s.cx);
+      t.setAttribute('y', s.cy);
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('dominant-baseline', 'central');
+      t.setAttribute('fill', '#fff');
+      t.setAttribute('font-size', r * 0.95);
+      t.setAttribute('font-family', 'Inter, sans-serif');
+      t.setAttribute('font-weight', '700');
+      t.textContent = s.id;
+      g.appendChild(t);
+
+      // Tooltip via <title>
+      const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+      title.textContent = `Spot #${s.id} — ${s.occupied ? 'Occupied' : 'Open'}`;
+      g.appendChild(title);
+
+      svg.appendChild(g);
+    });
+
+    $('info-frame').textContent = `${w} × ${h}`;
+  }
+
+  // ============================================================
+  // Render history chart
+  // ============================================================
+  function renderHistory(history) {
+    const ctx = $('history-chart').getContext('2d');
+    const labels   = history.map(r => fmtTime(r.timestamp));
+    const occupied = history.map(r => r.occupied);
+    const open     = history.map(r => r.open);
+
+    if (historyChart) historyChart.destroy();
+
+    historyChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Occupied',
+            data: occupied,
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239,68,68,0.12)',
+            tension: 0.35,
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            borderWidth: 2,
+          },
+          {
+            label: 'Open',
+            data: open,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16,185,129,0.12)',
+            tension: 0.35,
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            borderWidth: 2,
+          },
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { font: { family: 'Inter' }, boxWidth: 10, boxHeight: 10, usePointStyle: true }
+          },
+          tooltip: {
+            backgroundColor: '#0f172a',
+            titleFont: { family: 'Inter', weight: '600' },
+            bodyFont:  { family: 'Inter' },
+            padding: 10,
+            cornerRadius: 8,
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { family: 'Inter', size: 11 },
+              color: '#94a3b8',
+              maxRotation: 0,
+              autoSkipPadding: 18,
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: '#eef2f7' },
+            ticks: {
+              font: { family: 'Inter', size: 11 },
+              color: '#94a3b8',
+              precision: 0,
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderHistoryEmpty() {
+    const ctx = $('history-chart').getContext('2d');
+    if (historyChart) historyChart.destroy();
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('No history data yet — start the detector to populate this chart.', ctx.canvas.width / 2, ctx.canvas.height / 2);
+  }
+
+  // ============================================================
+  // Main refresh
+  // ============================================================
+  async function refresh() {
+    try {
+      setStatus('connecting', 'Connecting…');
+      const [state, history] = await Promise.all([
+        fetchState().catch(e => { throw e; }),
+        fetchHistory(currentRangeHours).catch(() => []),
+      ]);
+
+      renderKpis(state);
+      renderMap(state);
+
+      if (history && history.length > 0) {
+        renderHistory(history);
+      } else {
+        renderHistoryEmpty();
+      }
+
+      if (state && !state.empty) {
+        $('last-updated').textContent = 'updated ' + fmtRelative(state.timestamp);
+        $('info-snapshot').textContent = fmtTime(state.timestamp);
+      } else {
+        $('last-updated').textContent = 'no data yet';
+        $('info-snapshot').textContent = '—';
+      }
+
+      setStatus('live', 'Live · API connected');
+    } catch (err) {
+      console.error('[dashboard] refresh failed:', err);
+      setStatus('down', 'API offline');
+      $('last-updated').textContent = 'API unreachable';
+      // Don't wipe existing data on transient failure.
+      if (!historyChart) renderHistoryEmpty();
+    }
+  }
+
+  // ============================================================
+  // Range controls
+  // ============================================================
+  $('range-ctrl').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('#range-ctrl button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentRangeHours = parseInt(btn.dataset.hours, 10);
+    refresh();
+  });
+
+  // ============================================================
+  // Manual refresh
+  // ============================================================
+  $('refresh-btn').addEventListener('click', refresh);
+
+  // ============================================================
+  // Camera feed
+  // ============================================================
+  const feedImg = $('feed-img');
+  feedImg.addEventListener('load',  () => feedImg.classList.remove('hidden'));
+  feedImg.addEventListener('error', () => feedImg.classList.add('hidden'));
+  // Cache-bust on load so MJPEG actually connects, not a cached frame.
+  feedImg.src = `${STREAM_URL}?t=${Date.now()}`;
+
+  // ============================================================
+  // Login handling
+  // ============================================================
+  async function handleLogin(event) {
+    event.preventDefault();
+    const username = $('username').value;
+    const password = $('password').value;
+    const errorDiv = $('login-error');
+    
+    errorDiv.classList.remove('show');
+    
+    try {
+      const res = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        showDashboard();
+      } else {
+        errorDiv.textContent = data.message || 'Invalid credentials';
+        errorDiv.classList.add('show');
+      }
+    } catch (err) {
+      console.error('[login] Error:', err);
+      errorDiv.textContent = 'Could not connect to server';
+      errorDiv.classList.add('show');
+    }
+    
+    return false;
+  }
+
+  function showLogin() {
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+    $('login-screen').style.display = 'flex';
+    $('dashboard').style.display = 'none';
+  }
+
+  function showDashboard() {
+    $('login-screen').style.display = 'none';
+    $('dashboard').style.display = 'grid';
+    refresh();
+    refreshTimer = setInterval(refresh, REFRESH_MS);
+  }
+
+  async function handleLogout() {
+    try {
+      await fetch(`${API_BASE}/logout`, { 
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (err) {
+      console.error('[logout] Error:', err);
+    }
+    showLogin();
+  }
+
+  // ============================================================
+  // User Management (Admin only)
+  // ============================================================
+  let currentUser = null;
+  let editingUserId = null;
+
+  async function loadCurrentUser() {
+    try {
+      const res = await fetch(`${API_BASE}/me`, { credentials: 'include' });
+      if (res.ok) {
+        currentUser = await res.json();
+        // Show users nav if admin
+        if (currentUser.is_admin) {
+          $('users-nav').style.display = 'flex';
+        }
+      }
+    } catch (err) {
+      console.error('[user] Failed to load current user:', err);
+    }
+  }
+
+  async function loadUsers() {
+    try {
+      const res = await fetch(`${API_BASE}/api/users`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load users');
+      
+      const users = await res.json();
+      const tbody = $('users-table-body');
+      
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:24px 0;text-align:center;color:var(--muted);">No users yet</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = users.map(u => `
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:14px 0;font-weight:500;">${u.username}</td>
+          <td style="padding:14px 0;color:var(--ink-soft);">${u.email || '—'}</td>
+          <td style="padding:14px 0;">
+            <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;
+              ${u.is_admin ? 'background:#ecfdf5;color:#047857;' : 'background:#f1f5f9;color:var(--ink-soft);'}">
+              ${u.is_admin ? 'Admin' : 'User'}
+            </span>
+          </td>
+          <td style="padding:14px 0;color:var(--ink-soft);font-size:13px;">${new Date(u.created_at).toLocaleDateString()}</td>
+          <td style="padding:14px 0;text-align:right;">
+            <button class="btn ghost" style="padding:6px 12px;font-size:12px;margin-right:6px;" onclick="editUser(${u.id})">Edit</button>
+            <button class="btn ghost" style="padding:6px 12px;font-size:12px;color:var(--occupied);" onclick="deleteUserConfirm(${u.id}, '${u.username}')" ${u.id === currentUser?.id ? 'disabled' : ''}>Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      console.error('[user] Failed to load users:', err);
+      $('users-table-body').innerHTML = '<tr><td colspan="5" style="padding:24px 0;text-align:center;color:var(--occupied);">Failed to load users</td></tr>';
+    }
+  }
+
+  function showUsersPanel() {
+    document.querySelector('.content:not(#users-panel)').style.display = 'none';
+    $('users-panel').style.display = 'block';
+    loadUsers();
+  }
+
+  function showCreateUserModal() {
+    editingUserId = null;
+    $('modal-title').textContent = 'Create User';
+    $('modal-username').value = '';
+    $('modal-email').value = '';
+    $('modal-password').value = '';
+    $('modal-is-admin').checked = false;
+    $('password-hint').style.display = 'none';
+    $('modal-error').style.display = 'none';
+    $('user-modal').style.display = 'flex';
+  }
+
+  async function editUser(userId) {
+    try {
+      const res = await fetch(`${API_BASE}/api/users`, { credentials: 'include' });
+      const users = await res.json();
+      const user = users.find(u => u.id === userId);
+      
+      if (!user) return;
+      
+      editingUserId = userId;
+      $('modal-title').textContent = 'Edit User';
+      $('modal-username').value = user.username;
+      $('modal-email').value = user.email || '';
+      $('modal-password').value = '';
+      $('modal-is-admin').checked = user.is_admin;
+      $('password-hint').style.display = 'block';
+      $('modal-error').style.display = 'none';
+      $('user-modal').style.display = 'flex';
+    } catch (err) {
+      console.error('[user] Failed to load user:', err);
+    }
+  }
+
+  async function saveUser() {
+    const username = $('modal-username').value.trim();
+    const email = $('modal-email').value.trim() || null;
+    const password = $('modal-password').value;
+    const isAdmin = $('modal-is-admin').checked;
+    const errorDiv = $('modal-error');
+    
+    if (!username) {
+      errorDiv.textContent = 'Username is required';
+      errorDiv.style.display = 'block';
+      return;
+    }
+    
+    if (!editingUserId && !password) {
+      errorDiv.textContent = 'Password is required for new users';
+      errorDiv.style.display = 'block';
+      return;
+    }
+    
+    try {
+      const body = { username, email, is_admin: isAdmin };
+      if (password) body.password = password;
+      
+      const res = await fetch(
+        editingUserId ? `${API_BASE}/api/users/${editingUserId}` : `${API_BASE}/api/users`,
+        {
+          method: editingUserId ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        }
+      );
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to save user');
+      }
+      
+      closeUserModal();
+      loadUsers();
+    } catch (err) {
+      errorDiv.textContent = err.message;
+      errorDiv.style.display = 'block';
+    }
+  }
+
+  function closeUserModal() {
+    $('user-modal').style.display = 'none';
+    editingUserId = null;
+  }
+
+  async function deleteUserConfirm(userId, username) {
+    if (!confirm(`Delete user "${username}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/users/${userId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to delete user');
+      }
+      
+      loadUsers();
+    } catch (err) {
+      alert('Failed to delete user: ' + err.message);
+    }
+  }
+
+  // ============================================================
+  // Boot
+  // ============================================================
+  // Try to load dashboard — if 401, login screen will show automatically
+  loadCurrentUser(); // Load user info to check admin status
+  refresh().catch(() => {
+    console.log('[boot] Initial auth check failed, showing login');
+    showLogin();
+  });
+  refreshTimer = setInterval(refresh, REFRESH_MS);
+</script>
+</body>
+</html>
