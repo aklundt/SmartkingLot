@@ -159,3 +159,60 @@ def get_history(hours=24):
     ''', (f'-{hours} hours',)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def get_spot_stats():
+    """
+    Per-spot statistics computed from spot_states + snapshots history.
+
+    Returns a list of dicts: [{
+        id, cx, cy, w, h,
+        observations,        # number of snapshots this spot appeared in
+        occupied_count,      # number of those where it was occupied
+        occupied_pct,        # occupied_count / observations * 100
+        turnover,            # number of state changes (occupied -> open or vice versa)
+    }, ...]
+    """
+    conn = get_conn()
+
+    # base spot info
+    spots = {r['id']: dict(r) for r in conn.execute('SELECT * FROM spots').fetchall()}
+    for s in spots.values():
+        s['observations']   = 0
+        s['occupied_count'] = 0
+        s['turnover']       = 0
+
+    # walk through every spot_state ordered by snapshot time, tracking transitions
+    rows = conn.execute('''
+        SELECT ss.spot_id, ss.occupied, s.timestamp
+        FROM spot_states ss
+        JOIN snapshots s ON s.id = ss.snapshot_id
+        ORDER BY ss.spot_id, s.id
+    ''').fetchall()
+
+    last_state = {}  # spot_id -> last seen occupied value (0 or 1)
+    for r in rows:
+        sid = r['spot_id']
+        occ = r['occupied']
+        if sid not in spots:
+            continue
+
+        spots[sid]['observations']   += 1
+        spots[sid]['occupied_count'] += occ
+
+        if sid in last_state and last_state[sid] != occ:
+            spots[sid]['turnover'] += 1
+        last_state[sid] = occ
+
+    conn.close()
+
+    # compute percentages
+    result = []
+    for s in spots.values():
+        s['occupied_pct'] = (
+            s['occupied_count'] / s['observations'] * 100
+            if s['observations'] > 0 else 0
+        )
+        result.append(s)
+
+    return result
