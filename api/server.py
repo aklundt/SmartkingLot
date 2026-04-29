@@ -52,6 +52,27 @@ def admin_required(f):
     return decorated_function
 
 
+def api_key_required(f):
+    """Decorator to require valid API key (for detector endpoints)"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization', '').replace('Bearer ', '')
+        
+        if not api_key:
+            return jsonify({'error': 'API key required'}), 401
+        
+        key_data = db.verify_api_key(api_key)
+        if not key_data:
+            return jsonify({'error': 'Invalid API key'}), 401
+        
+        # Store key info in request context for logging
+        request.api_key_name = key_data['name']
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+
 # ============================================================
 # Detection utility functions
 # ============================================================
@@ -181,6 +202,47 @@ def get_current_user():
     })
 
 
+@app.route('/me', methods=['PUT'])
+@login_required
+def update_current_user():
+    """Update current user's email or password"""
+    body = request.get_json()
+    
+    email = body.get('email')
+    current_password = body.get('current_password')
+    new_password = body.get('new_password')
+    
+    # Get current user data to verify password
+    user_data = db.get_user_by_id(current_user.id)
+    
+    # If changing password, verify current password first
+    if new_password:
+        if not current_password:
+            return jsonify({'error': 'Current password required to change password'}), 400
+        
+        if not db.verify_password(user_data, current_password):
+            return jsonify({'error': 'Current password is incorrect'}), 401
+    
+    # Update email and/or password
+    success = db.update_user(
+        current_user.id,
+        email=email,
+        password=new_password if new_password else None
+    )
+    
+    if not success:
+        return jsonify({'error': 'Failed to update profile'}), 400
+    
+    # Return updated user info
+    updated_user = db.get_user_by_id(current_user.id)
+    return jsonify({
+        'id': updated_user['id'],
+        'username': updated_user['username'],
+        'email': updated_user.get('email'),
+        'is_admin': bool(updated_user.get('is_admin', 0))
+    })
+
+
 # ============================================================
 # User management routes (admin only)
 # ============================================================
@@ -264,11 +326,64 @@ def delete_user(user_id):
 
 
 # ============================================================
+# API Key management routes (admin only)
+# ============================================================
+
+@app.route('/api/keys', methods=['GET'])
+@admin_required
+def get_api_keys():
+    """List all API keys"""
+    keys = db.get_all_api_keys()
+    return jsonify(keys)
+
+
+@app.route('/api/keys', methods=['POST'])
+@admin_required
+def create_api_key():
+    """Create a new API key"""
+    body = request.get_json()
+    
+    name = body.get('name', '').strip()
+    description = body.get('description', '').strip() or None
+    
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+    
+    api_key = db.create_api_key(name, description)
+    
+    if not api_key:
+        return jsonify({'error': 'Failed to create API key'}), 500
+    
+    return jsonify({
+        'api_key': api_key,
+        'name': name,
+        'description': description,
+        'warning': 'Save this key now - it will not be shown again!'
+    }), 201
+
+
+@app.route('/api/keys/<int:key_id>', methods=['DELETE'])
+@admin_required
+def delete_api_key(key_id):
+    """Delete an API key"""
+    db.delete_api_key(key_id)
+    return jsonify({'success': True})
+
+
+@app.route('/api/keys/<int:key_id>/revoke', methods=['POST'])
+@admin_required
+def revoke_api_key(key_id):
+    """Revoke (deactivate) an API key"""
+    db.revoke_api_key(key_id)
+    return jsonify({'success': True})
+
+
+# ============================================================
 # Parking API routes (protected)
 # ============================================================
 
 @app.route('/api/snapshot', methods=['POST'])
-@login_required
+@api_key_required
 def post_snapshot():
     body       = request.get_json(force=True)
     detections = body.get('detections', [])
@@ -302,7 +417,7 @@ def post_snapshot():
 
     occ   = sum(1 for v in spot_states.values() if v)
     open_ = len(spot_states) - occ
-    print(f'[api] Snapshot {snapshot_id}: {occ} occupied / {open_} open')
+    print(f'[api] Snapshot {snapshot_id} from [{request.api_key_name}]: {occ} occupied / {open_} open')
 
     return jsonify({'snapshot_id': snapshot_id, 'occupied': occ, 'open': open_}), 201
 

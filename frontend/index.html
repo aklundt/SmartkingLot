@@ -485,7 +485,7 @@
       <div class="brand">
         <div class="logo">S</div>
         <div class="brand-text">
-          SmartParkingLot
+          SmartkingLot
           <small>Dashboard</small>
         </div>
       </div>
@@ -523,17 +523,17 @@
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
       Overview
     </a>
-    <a class="nav-item">
+    <a class="nav-item" onclick="showLiveFeed()">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m10 10V7m0 10a2 2 0 002 2h.5a.5.5 0 00.5-.5V5.5a.5.5 0 00-.5-.5H21a2 2 0 00-2 2v10z"/></svg>
       Live Feed
     </a>
-    <a class="nav-item">
+    <a class="nav-item" onclick="showHistory()">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
       History
     </a>
 
     <div class="nav-section">Management</div>
-    <a class="nav-item">
+    <a class="nav-item" onclick="showSpotsRegistry()">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
       Spots Registry
     </a>
@@ -545,7 +545,7 @@
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
       API Keys
     </a>
-    <a class="nav-item">
+    <a class="nav-item" onclick="showSettings()">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
       Settings
     </a>
@@ -578,12 +578,17 @@
     <section class="content" id="overview-panel">
 
       <!-- Welcome banner -->
-      <div class="banner">
+      <div class="banner" id="welcome-banner">
         <div>
           <h3>Welcome back, operator.</h3>
           <p>SmartkingLot is watching your lot with YOLOv8 computer vision. Spots are tallied every 60 seconds straight from the camera feed — no sensors needed.</p>
         </div>
-        <button class="btn btn-on-brand">View live camera</button>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn btn-on-brand" onclick="showLiveFeed()">View live camera</button>
+          <button class="btn ghost" onclick="dismissBanner()" style="padding:9px 12px;" title="Dismiss">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
       </div>
 
       <!-- KPI cards -->
@@ -858,6 +863,180 @@
         </div>
       </div>
     </div>
+
+    <!-- ============================================================
+         LIVE FEED PANEL
+         ============================================================ -->
+    <section class="content" id="live-feed-panel" style="display:none;">
+      <div style="margin-bottom:24px;">
+        <h1 style="margin:0;font-size:24px;font-weight:700;">Live Camera Feed</h1>
+        <p style="margin:4px 0 0;color:var(--ink-soft);font-size:14px;">Real-time MJPEG stream from your parking lot camera</p>
+      </div>
+
+      <div class="card">
+        <div style="position:relative;width:100%;aspect-ratio:16/9;background:#0f172a;border-radius:8px;overflow:hidden;">
+          <img id="live-feed-img" src="" style="width:100%;height:100%;object-fit:contain;" alt="Live camera feed" />
+          <div id="feed-status" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#cbd5e1;text-align:center;display:none;">
+            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin:0 auto 12px;opacity:0.5;"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <p style="margin:0;font-size:14px;">Connecting to camera...</p>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:13px;color:var(--ink-soft);">
+            <strong style="color:var(--ink);">Stream URL:</strong> <code id="stream-url-display" style="font-size:12px;"></code>
+          </div>
+          <button class="btn ghost" onclick="reconnectFeed()" style="font-size:12px;padding:6px 12px;">Reconnect</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         HISTORY PANEL
+         ============================================================ -->
+    <section class="content" id="history-panel" style="display:none;">
+      <div style="margin-bottom:24px;">
+        <h1 style="margin:0;font-size:24px;font-weight:700;">Parking History</h1>
+        <p style="margin:4px 0 0;color:var(--ink-soft);font-size:14px;">Historical occupancy data and trends</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Occupancy Over Time</h2>
+            <p class="card-sub">Snapshot history showing occupied vs open spots</p>
+          </div>
+          <div id="history-range-ctrl" style="display:flex;gap:8px;">
+            <button class="btn ghost active" data-hours="24" style="padding:6px 12px;font-size:12px;">24h</button>
+            <button class="btn ghost" data-hours="72" style="padding:6px 12px;font-size:12px;">3d</button>
+            <button class="btn ghost" data-hours="168" style="padding:6px 12px;font-size:12px;">7d</button>
+          </div>
+        </div>
+        <div class="chart-box">
+          <canvas id="history-detail-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h2 style="margin-bottom:12px;">Snapshot Log</h2>
+        <div id="snapshot-log" style="max-height:400px;overflow-y:auto;"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SPOTS REGISTRY PANEL
+         ============================================================ -->
+    <section class="content" id="spots-registry-panel" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:700;">Spots Registry</h1>
+          <p style="margin:4px 0 0;color:var(--ink-soft);font-size:14px;">Manage registered parking spots detected from camera</p>
+        </div>
+        <button class="btn" onclick="resetSpots()" style="background:var(--occupied);">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          Reset All Spots
+        </button>
+      </div>
+
+      <div class="card">
+        <div style="margin-bottom:16px;">
+          <h2>Registered Spots</h2>
+          <p class="card-sub">Spots are automatically detected on first snapshot</p>
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Spot ID</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Position (X, Y)</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Size (W × H)</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Registered</th>
+            </tr>
+          </thead>
+          <tbody id="spots-table-body">
+            <tr><td colspan="4" style="padding:24px 0;text-align:center;color:var(--muted);">Loading spots...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SETTINGS PANEL
+         ============================================================ -->
+    <section class="content" id="settings-panel" style="display:none;">
+      <div style="margin-bottom:24px;">
+        <h1 style="margin:0;font-size:24px;font-weight:700;">Settings</h1>
+        <p style="margin:4px 0 0;color:var(--ink-soft);font-size:14px;">Configure your parking lot monitoring system</p>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-bottom:4px;">System Information</h2>
+        <p class="card-sub" style="margin-bottom:20px;">Current configuration and status</p>
+        
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+          <div style="padding:14px;background:var(--bg);border-radius:8px;">
+            <div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px;">API Endpoint</div>
+            <div style="font-family:var(--font-mono);font-size:13px;" id="settings-api-url">—</div>
+          </div>
+          <div style="padding:14px;background:var(--bg);border-radius:8px;">
+            <div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px;">Stream URL</div>
+            <div style="font-family:var(--font-mono);font-size:13px;" id="settings-stream-url">—</div>
+          </div>
+          <div style="padding:14px;background:var(--bg);border-radius:8px;">
+            <div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px;">Logged in as</div>
+            <div style="font-size:13px;font-weight:500;" id="settings-username">—</div>
+          </div>
+          <div style="padding:14px;background:var(--bg);border-radius:8px;">
+            <div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px;">Role</div>
+            <div style="font-size:13px;font-weight:500;" id="settings-role">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h2 style="margin-bottom:4px;">Account</h2>
+        <p class="card-sub" style="margin-bottom:20px;">Manage your account settings</p>
+        
+        <div style="display:grid;gap:20px;margin-bottom:24px;">
+          <!-- Change Email -->
+          <div style="padding:16px;background:var(--bg);border-radius:8px;">
+            <h3 style="margin:0 0 12px;font-size:15px;font-weight:600;">Change Email</h3>
+            <div style="display:flex;gap:10px;align-items:flex-end;">
+              <div style="flex:1;">
+                <label style="display:block;font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;">New Email</label>
+                <input type="email" id="new-email" placeholder="your.email@example.com" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;" />
+              </div>
+              <button class="btn ghost" onclick="updateEmail()" style="padding:9px 16px;">Update Email</button>
+            </div>
+            <div id="email-update-message" style="margin-top:10px;display:none;padding:8px 12px;border-radius:6px;font-size:13px;"></div>
+          </div>
+
+          <!-- Change Password -->
+          <div style="padding:16px;background:var(--bg);border-radius:8px;">
+            <h3 style="margin:0 0 12px;font-size:15px;font-weight:600;">Change Password</h3>
+            <div style="display:grid;gap:12px;">
+              <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;">Current Password</label>
+                <input type="password" id="current-password" placeholder="••••••••" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;" />
+              </div>
+              <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;">New Password</label>
+                <input type="password" id="new-password" placeholder="••••••••" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;" />
+              </div>
+              <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;">Confirm New Password</label>
+                <input type="password" id="confirm-password" placeholder="••••••••" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;" />
+              </div>
+              <button class="btn ghost" onclick="updatePassword()" style="width:fit-content;">Update Password</button>
+            </div>
+            <div id="password-update-message" style="margin-top:10px;display:none;padding:8px 12px;border-radius:6px;font-size:13px;"></div>
+          </div>
+        </div>
+        
+        <button class="btn ghost" onclick="handleLogout()" style="background:var(--occupied);color:#fff;">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Log Out
+        </button>
+      </div>
+    </section>
 
   </main>
 </div>
@@ -1363,6 +1542,43 @@
     $('overview-panel').style.display = 'block';
   }
 
+  function showLiveFeed() {
+    document.querySelectorAll('.content').forEach(el => el.style.display = 'none');
+    $('live-feed-panel').style.display = 'block';
+    initLiveFeed();
+  }
+
+  function showHistory() {
+    document.querySelectorAll('.content').forEach(el => el.style.display = 'none');
+    $('history-panel').style.display = 'block';
+    loadHistoryDetail();
+  }
+
+  function showSpotsRegistry() {
+    document.querySelectorAll('.content').forEach(el => el.style.display = 'none');
+    $('spots-registry-panel').style.display = 'block';
+    loadSpotsRegistry();
+  }
+
+  function showSettings() {
+    document.querySelectorAll('.content').forEach(el => el.style.display = 'none');
+    $('settings-panel').style.display = 'block';
+    loadSettings();
+  }
+
+  function dismissBanner() {
+    $('welcome-banner').style.display = 'none';
+    localStorage.setItem('banner-dismissed', 'true');
+  }
+
+  // Check if banner was previously dismissed
+  if (localStorage.getItem('banner-dismissed') === 'true') {
+    setTimeout(() => {
+      const banner = $('welcome-banner');
+      if (banner) banner.style.display = 'none';
+    }, 100);
+  }
+
   function showCreateUserModal() {
     editingUserId = null;
     $('modal-title').textContent = 'Create User';
@@ -1634,8 +1850,361 @@
   }
 
   // ============================================================
+  // Live Feed Panel
+  // ============================================================
+  
+  function initLiveFeed() {
+    const img = $('live-feed-img');
+    const status = $('feed-status');
+    
+    $('stream-url-display').textContent = STREAM_URL;
+    
+    status.style.display = 'block';
+    img.style.display = 'none';
+    
+    img.onload = () => {
+      status.style.display = 'none';
+      img.style.display = 'block';
+    };
+    
+    img.onerror = () => {
+      status.innerHTML = `
+        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin:0 auto 12px;opacity:0.5;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <p style="margin:0;font-size:14px;">Camera feed unavailable</p>
+        <p style="margin:8px 0 0;font-size:12px;opacity:0.7;">Check that the stream is running</p>
+      `;
+      status.style.display = 'block';
+      img.style.display = 'none';
+    };
+    
+    img.src = `${STREAM_URL}?t=${Date.now()}`;
+  }
+
+  function reconnectFeed() {
+    initLiveFeed();
+  }
+
+  // ============================================================
+  // History Panel
+  // ============================================================
+  
+  let historyDetailChart = null;
+  let currentHistoryHours = 24;
+
+  async function loadHistoryDetail() {
+    try {
+      const res = await fetch(`${API_BASE}/api/history?hours=${currentHistoryHours}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load history');
+      
+      const history = await res.json();
+      
+      if (history.length > 0) {
+        renderHistoryDetailChart(history);
+        renderSnapshotLog(history);
+      } else {
+        const ctx = $('history-detail-chart').getContext('2d');
+        if (historyDetailChart) historyDetailChart.destroy();
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '14px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText('No history data yet', ctx.canvas.width / 2, ctx.canvas.height / 2);
+        
+        $('snapshot-log').innerHTML = '<p style="text-align:center;color:var(--muted);padding:24px 0;">No snapshots recorded yet</p>';
+      }
+    } catch (err) {
+      console.error('[history] Failed to load:', err);
+    }
+  }
+
+  function renderHistoryDetailChart(history) {
+    const ctx = $('history-detail-chart').getContext('2d');
+    const labels = history.map(r => fmtTime(r.timestamp));
+    const occupied = history.map(r => r.occupied);
+    const open = history.map(r => r.open);
+    
+    if (historyDetailChart) historyDetailChart.destroy();
+    
+    historyDetailChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Occupied',
+            data: occupied,
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239,68,68,0.12)',
+            tension: 0.35,
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            borderWidth: 2,
+          },
+          {
+            label: 'Open',
+            data: open,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16,185,129,0.12)',
+            tension: 0.35,
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            borderWidth: 2,
+          },
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { font: { family: 'Inter' }, boxWidth: 10, boxHeight: 10, usePointStyle: true }
+          },
+          tooltip: {
+            backgroundColor: '#0f172a',
+            titleFont: { family: 'Inter', weight: '600' },
+            bodyFont: { family: 'Inter' },
+            padding: 10,
+            cornerRadius: 8,
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { family: 'Inter', size: 11 },
+              color: '#94a3b8',
+              maxRotation: 0,
+              autoSkipPadding: 18,
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: '#eef2f7' },
+            ticks: {
+              font: { family: 'Inter', size: 11 },
+              color: '#94a3b8',
+              precision: 0,
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderSnapshotLog(history) {
+    const log = $('snapshot-log');
+    log.innerHTML = history.slice().reverse().slice(0, 50).map(s => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-weight:500;font-size:13px;">${fmtTime(s.timestamp)}</div>
+          <div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">${fmtRelative(s.timestamp)}</div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:center;">
+          <div style="text-align:right;">
+            <div style="font-size:12px;color:var(--ink-soft);">Total</div>
+            <div style="font-weight:600;font-size:14px;">${s.total}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:12px;color:var(--ink-soft);">Occupied</div>
+            <div style="font-weight:600;font-size:14px;color:var(--occupied);">${s.occupied}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:12px;color:var(--ink-soft);">Open</div>
+            <div style="font-weight:600;font-size:14px;color:var(--open);">${s.open}</div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ============================================================
+  // Spots Registry Panel
+  // ============================================================
+  
+  async function loadSpotsRegistry() {
+    try {
+      const res = await fetch(`${API_BASE}/api/state`, { credentials: 'include' });
+      if (res.status === 404) {
+        $('spots-table-body').innerHTML = '<tr><td colspan="4" style="padding:24px 0;text-align:center;color:var(--muted);">No spots registered yet. Start the detector to register spots.</td></tr>';
+        return;
+      }
+      
+      if (!res.ok) throw new Error('Failed to load spots');
+      
+      const state = await res.json();
+      const spots = state.spots || [];
+      
+      if (spots.length === 0) {
+        $('spots-table-body').innerHTML = '<tr><td colspan="4" style="padding:24px 0;text-align:center;color:var(--muted);">No spots found</td></tr>';
+        return;
+      }
+      
+      $('spots-table-body').innerHTML = spots.map(s => `
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:14px 0;font-weight:500;">#${s.id}</td>
+          <td style="padding:14px 0;color:var(--ink-soft);font-family:var(--font-mono);font-size:12px;">(${Math.round(s.cx)}, ${Math.round(s.cy)})</td>
+          <td style="padding:14px 0;color:var(--ink-soft);font-family:var(--font-mono);font-size:12px;">${Math.round(s.w)} × ${Math.round(s.h)}</td>
+          <td style="padding:14px 0;color:var(--ink-soft);font-size:13px;">${state.timestamp ? fmtRelative(state.timestamp) : 'Unknown'}</td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      console.error('[spots] Failed to load:', err);
+      $('spots-table-body').innerHTML = '<tr><td colspan="4" style="padding:24px 0;text-align:center;color:var(--occupied);">Failed to load spots</td></tr>';
+    }
+  }
+
+  async function resetSpots() {
+    if (!currentUser || !currentUser.is_admin) {
+      alert('Admin privileges required');
+      return;
+    }
+    
+    if (!confirm('Reset all parking spots? This will delete all spot data and history. This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/reset`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (!res.ok) throw new Error('Failed to reset spots');
+      
+      alert('All spots and history have been reset. The detector will re-register spots on the next snapshot.');
+      loadSpotsRegistry();
+    } catch (err) {
+      alert('Failed to reset spots: ' + err.message);
+    }
+  }
+
+  // ============================================================
+  // Settings Panel
+  // ============================================================
+  
+  function loadSettings() {
+    $('settings-api-url').textContent = API_BASE;
+    $('settings-stream-url').textContent = STREAM_URL;
+    
+    if (currentUser) {
+      $('settings-username').textContent = currentUser.username;
+      $('settings-role').textContent = currentUser.is_admin ? 'Administrator' : 'User';
+      
+      // Pre-fill email if exists
+      if (currentUser.email) {
+        $('new-email').value = currentUser.email;
+      }
+    }
+  }
+
+  async function updateEmail() {
+    const newEmail = $('new-email').value.trim();
+    const messageDiv = $('email-update-message');
+    
+    if (!newEmail) {
+      showMessage(messageDiv, 'Please enter an email address', 'error');
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/me`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: newEmail })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update email');
+      }
+      
+      const data = await res.json();
+      currentUser.email = data.email;
+      
+      showMessage(messageDiv, 'Email updated successfully!', 'success');
+    } catch (err) {
+      showMessage(messageDiv, err.message, 'error');
+    }
+  }
+
+  async function updatePassword() {
+    const currentPassword = $('current-password').value;
+    const newPassword = $('new-password').value;
+    const confirmPassword = $('confirm-password').value;
+    const messageDiv = $('password-update-message');
+    
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      showMessage(messageDiv, 'Please fill in all password fields', 'error');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      showMessage(messageDiv, 'New passwords do not match', 'error');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      showMessage(messageDiv, 'Password must be at least 6 characters', 'error');
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/me`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          current_password: currentPassword,
+          new_password: newPassword 
+        })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update password');
+      }
+      
+      // Clear password fields
+      $('current-password').value = '';
+      $('new-password').value = '';
+      $('confirm-password').value = '';
+      
+      showMessage(messageDiv, 'Password updated successfully!', 'success');
+    } catch (err) {
+      showMessage(messageDiv, err.message, 'error');
+    }
+  }
+
+  function showMessage(element, message, type) {
+    element.textContent = message;
+    element.style.display = 'block';
+    element.style.background = type === 'success' ? '#ecfdf5' : '#fef2f2';
+    element.style.color = type === 'success' ? '#047857' : '#b91c1c';
+    element.style.border = `1px solid ${type === 'success' ? '#10b981' : '#ef4444'}`;
+    
+    setTimeout(() => {
+      element.style.display = 'none';
+    }, 5000);
+  }
+
+  // ============================================================
   // Boot
   // ============================================================
+  // Setup event listeners
+  $('history-range-ctrl').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('#history-range-ctrl button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentHistoryHours = parseInt(btn.dataset.hours, 10);
+    loadHistoryDetail();
+  });
+
   // Try to load dashboard — if 401, login screen will show automatically
   loadCurrentUser(); // Load user info to check admin status
   refresh().catch(() => {

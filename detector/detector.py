@@ -11,8 +11,14 @@ load_dotenv(Path(__file__).parent.parent / '.env')
 
 STREAM_URL = os.getenv('STREAM_URL', 'http://localhost:8080/feed')
 API_URL    = os.getenv('API_URL',    'http://localhost:5000/api/snapshot')
+API_KEY    = os.getenv('API_KEY')
 CONFIDENCE = float(os.getenv('CONFIDENCE', 0.35))
 INTERVAL   = int(os.getenv('INTERVAL', 60))
+
+if not API_KEY:
+    print('[detector] ERROR: API_KEY not found in .env file!')
+    print('[detector] Please add API_KEY=your-key-here to your .env file')
+    exit(1)
 
 MODEL_PATH = Path(__file__).parent.parent / 'models' / 'best_320x12n.pt'
 
@@ -20,6 +26,7 @@ model = YOLO(MODEL_PATH)
 print(f'[detector] Model:    {MODEL_PATH}')
 print(f'[detector] Stream:   {STREAM_URL}')
 print(f'[detector] API:      {API_URL}')
+print(f'[detector] API Key:  {API_KEY[:10]}...') # Show first 10 chars only
 print(f'[detector] Interval: {INTERVAL}s')
 
 
@@ -56,11 +63,15 @@ def detect(frame_bytes):
 
 
 def post_snapshot(detections, img_width, img_height):
-    r = requests.post(API_URL, json={
-        'img_width':  img_width,
-        'img_height': img_height,
-        'detections': detections,
-    }, timeout=10)
+    r = requests.post(API_URL, 
+        headers={'X-API-Key': API_KEY},
+        json={
+            'img_width':  img_width,
+            'img_height': img_height,
+            'detections': detections,
+        }, 
+        timeout=10
+    )
     r.raise_for_status()
     return r.json()
 
