@@ -174,6 +174,94 @@
     }
     .btn.ghost:hover { background: #f8fafc; }
 
+    /* -------- Login screen -------- */
+    .login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+    .login-card {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    }
+    .login-card .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      color: var(--ink);
+      padding: 0;
+    }
+    .login-card .brand .logo {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0ea5a4, #14b8a6);
+      display: grid; place-items: center;
+      color: #fff; font-weight: 800;
+      font-size: 24px;
+      box-shadow: 0 6px 16px rgba(14,165,164,.4);
+    }
+    .login-card .brand-text {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .login-card .brand-text small {
+      display: block;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .login-form label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .login-form input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border .15s;
+    }
+    .login-form input:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(14,165,164,.1);
+    }
+    .login-form .btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 12px;
+      justify-content: center;
+    }
+    .login-error {
+      background: #fef2f2;
+      color: #b91c1c;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+    .login-error.show { display: block; }
+    
     .content { padding: 28px 32px 48px; max-width: 1400px; }
 
     /* -------- KPI cards -------- */
@@ -389,7 +477,37 @@
   </style>
 </head>
 <body>
-<div class="app">
+  <!-- ============================================================
+       LOGIN SCREEN
+       ============================================================ -->
+  <div class="login-screen" id="login-screen">
+    <div class="login-card">
+      <div class="brand">
+        <div class="logo">S</div>
+        <div class="brand-text">
+          SmartParkingLot
+          <small>Dashboard</small>
+        </div>
+      </div>
+      <form class="login-form" onsubmit="return handleLogin(event)">
+        <div>
+          <label for="username">Username</label>
+          <input type="text" id="username" required autocomplete="username" />
+        </div>
+        <div>
+          <label for="password">Password</label>
+          <input type="password" id="password" required autocomplete="current-password" />
+        </div>
+        <div class="login-error" id="login-error"></div>
+        <button type="submit" class="btn">Log in</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MAIN DASHBOARD (hidden until logged in)
+       ============================================================ -->
+<div class="app" id="dashboard" style="display: none;">
   <!-- ============ SIDEBAR ============ -->
   <aside class="sidebar">
     <div class="brand">
@@ -401,7 +519,7 @@
     </div>
 
     <div class="nav-section">Monitoring</div>
-    <a class="nav-item active">
+    <a class="nav-item active" onclick="showOverview()">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
       Overview
     </a>
@@ -419,13 +537,22 @@
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
       Spots Registry
     </a>
+    <a class="nav-item" id="users-nav" style="display:none;" onclick="showUsersPanel()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      Users
+    </a>
+    <a class="nav-item" id="api-keys-nav" style="display:none;" onclick="showApiKeysPanel()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+      API Keys
+    </a>
     <a class="nav-item">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
       Settings
     </a>
 
     <div class="sidebar-footer">
-      v0.1.0 &middot; Team SmartkingLot
+      <div style="margin-bottom:10px;">v0.1.0 · Team SmartkingLot</div>
+      <button class="btn ghost" style="width:100%;font-size:12px;padding:7px 10px;" onclick="handleLogout()">Log out</button>
     </div>
   </aside>
 
@@ -448,7 +575,7 @@
       </div>
     </header>
 
-    <section class="content">
+    <section class="content" id="overview-panel">
 
       <!-- Welcome banner -->
       <div class="banner">
@@ -586,6 +713,152 @@
       </div>
 
     </section>
+
+    <!-- ============================================================
+         API KEYS MANAGEMENT PANEL (Admin only, hidden by default)
+         ============================================================ -->
+    <section class="content" id="api-keys-panel" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:700;">API Keys</h1>
+          <p style="margin:4px 0 0;color:var(--ink-soft);font-size:14px;">Manage API keys for detector authentication</p>
+        </div>
+        <button class="btn" onclick="showCreateKeyModal()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Create API Key
+        </button>
+      </div>
+
+      <div class="card">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Name</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Description</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Created</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Last Used</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Status</th>
+              <th style="text-align:right;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="api-keys-table-body">
+            <tr><td colspan="6" style="padding:24px 0;text-align:center;color:var(--muted);">Loading API keys...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Create API Key Modal -->
+    <div id="api-key-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;">
+      <div class="card" style="max-width:500px;width:90%;max-height:90vh;overflow-y:auto;">
+        <h2 style="margin:0 0 20px;font-size:18px;font-weight:600;" id="key-modal-title">Create API Key</h2>
+        
+        <div id="key-form" style="display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;">Name</label>
+            <input type="text" id="key-name" placeholder="e.g., Main Detector" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+          </div>
+          
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;">Description (optional)</label>
+            <textarea id="key-description" rows="3" placeholder="What is this key for?" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;"></textarea>
+          </div>
+          
+          <div id="key-modal-error" style="display:none;background:#fef2f2;color:#b91c1c;padding:10px 12px;border-radius:8px;font-size:13px;"></div>
+          
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button class="btn" onclick="createApiKey()" style="flex:1;">Create Key</button>
+            <button class="btn ghost" onclick="closeKeyModal()" style="flex:1;">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Show key after creation -->
+        <div id="key-created" style="display:none;">
+          <div style="background:var(--brand-50);border:1px solid var(--brand);border-radius:8px;padding:16px;margin-bottom:16px;">
+            <p style="margin:0 0 10px;font-size:13px;font-weight:600;color:var(--brand-ink);">⚠️ Save this key now - it will never be shown again!</p>
+            <div style="background:#fff;padding:10px 12px;border-radius:6px;font-family:var(--font-mono);font-size:12px;word-break:break-all;border:1px solid var(--border);" id="created-key-value"></div>
+            <button class="btn ghost" onclick="copyApiKey()" style="width:100%;margin-top:10px;font-size:12px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              Copy to Clipboard
+            </button>
+          </div>
+          <button class="btn" onclick="closeKeyModal();loadApiKeys();" style="width:100%;">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         USERS MANAGEMENT PANEL (Admin only, hidden by default)
+         ============================================================ -->
+    <section class="content" id="users-panel" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:700;">User Management</h1>
+          <p style="margin:4px 0 0;color:var(--ink-soft);font-size:14px;">Manage user accounts and permissions</p>
+        </div>
+        <button class="btn" onclick="showCreateUserModal()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Add User
+        </button>
+      </div>
+
+      <div class="card">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Username</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Email</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Role</th>
+              <th style="text-align:left;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Created</th>
+              <th style="text-align:right;padding:12px 0;font-weight:600;font-size:13px;color:var(--ink-soft);">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <tr><td colspan="5" style="padding:24px 0;text-align:center;color:var(--muted);">Loading users...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Create/Edit User Modal -->
+    <div id="user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;">
+      <div class="card" style="max-width:500px;width:90%;max-height:90vh;overflow-y:auto;">
+        <h2 style="margin:0 0 20px;font-size:18px;font-weight:600;" id="modal-title">Create User</h2>
+        
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;">Username</label>
+            <input type="text" id="modal-username" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+          </div>
+          
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;">Email (optional)</label>
+            <input type="email" id="modal-email" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+          </div>
+          
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;">Password</label>
+            <input type="password" id="modal-password" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;" />
+            <p style="margin:4px 0 0;font-size:12px;color:var(--muted);" id="password-hint">Leave blank to keep current password</p>
+          </div>
+          
+          <div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="modal-is-admin" style="width:16px;height:16px;" />
+              <span style="font-size:13px;font-weight:500;">Admin privileges</span>
+            </label>
+          </div>
+          
+          <div id="modal-error" style="display:none;background:#fef2f2;color:#b91c1c;padding:10px 12px;border-radius:8px;font-size:13px;"></div>
+          
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button class="btn" onclick="saveUser()" style="flex:1;">Save</button>
+            <button class="btn ghost" onclick="closeUserModal()" style="flex:1;">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -661,14 +934,28 @@
   // Fetch current state
   // ============================================================
   async function fetchState() {
-    const res = await fetch(`${API_BASE}/api/state`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/state`, { 
+      cache: 'no-store',
+      credentials: 'include'
+    });
+    if (res.status === 401) {
+      showLogin();
+      throw new Error('Unauthorized');
+    }
     if (res.status === 404) return { empty: true };
     if (!res.ok) throw new Error(`State HTTP ${res.status}`);
     return res.json();
   }
 
   async function fetchHistory(hours) {
-    const res = await fetch(`${API_BASE}/api/history?hours=${hours}`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/history?hours=${hours}`, { 
+      cache: 'no-store',
+      credentials: 'include'
+    });
+    if (res.status === 401) {
+      showLogin();
+      throw new Error('Unauthorized');
+    }
     if (!res.ok) throw new Error(`History HTTP ${res.status}`);
     return res.json();
   }
@@ -930,9 +1217,431 @@
   feedImg.src = `${STREAM_URL}?t=${Date.now()}`;
 
   // ============================================================
+  // Login handling
+  // ============================================================
+  async function handleLogin(event) {
+    event.preventDefault();
+    const username = $('username').value;
+    const password = $('password').value;
+    const errorDiv = $('login-error');
+    
+    errorDiv.classList.remove('show');
+    
+    try {
+      const res = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        showDashboard();
+      } else {
+        errorDiv.textContent = data.message || 'Invalid credentials';
+        errorDiv.classList.add('show');
+      }
+    } catch (err) {
+      console.error('[login] Error:', err);
+      errorDiv.textContent = 'Could not connect to server';
+      errorDiv.classList.add('show');
+    }
+    
+    return false;
+  }
+
+  function showLogin() {
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+    // Clear login form fields
+    $('username').value = '';
+    $('password').value = '';
+    $('login-error').classList.remove('show');
+    
+    $('login-screen').style.display = 'flex';
+    $('dashboard').style.display = 'none';
+  }
+
+  function showDashboard() {
+    $('login-screen').style.display = 'none';
+    $('dashboard').style.display = 'grid';
+    loadCurrentUser(); // Load user info to show admin nav items
+    refresh();
+    refreshTimer = setInterval(refresh, REFRESH_MS);
+  }
+
+  async function handleLogout() {
+    try {
+      await fetch(`${API_BASE}/logout`, { 
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (err) {
+      console.error('[logout] Error:', err);
+    }
+    showLogin();
+  }
+
+  // ============================================================
+  // User Management (Admin only)
+  // ============================================================
+  let currentUser = null;
+  let editingUserId = null;
+
+  async function loadCurrentUser() {
+    try {
+      const res = await fetch(`${API_BASE}/me`, { credentials: 'include' });
+      if (res.ok) {
+        currentUser = await res.json();
+        // Show/hide admin nav items based on admin status
+        if (currentUser.is_admin) {
+          $('users-nav').style.display = 'flex';
+          $('api-keys-nav').style.display = 'flex';
+        } else {
+          $('users-nav').style.display = 'none';
+          $('api-keys-nav').style.display = 'none';
+        }
+      }
+    } catch (err) {
+      console.error('[user] Failed to load current user:', err);
+    }
+  }
+
+  async function loadUsers() {
+    try {
+      const res = await fetch(`${API_BASE}/api/users`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load users');
+      
+      const users = await res.json();
+      const tbody = $('users-table-body');
+      
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:24px 0;text-align:center;color:var(--muted);">No users yet</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = users.map(u => `
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:14px 0;font-weight:500;">${u.username}</td>
+          <td style="padding:14px 0;color:var(--ink-soft);">${u.email || '—'}</td>
+          <td style="padding:14px 0;">
+            <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;
+              ${u.is_admin ? 'background:#ecfdf5;color:#047857;' : 'background:#f1f5f9;color:var(--ink-soft);'}">
+              ${u.is_admin ? 'Admin' : 'User'}
+            </span>
+          </td>
+          <td style="padding:14px 0;color:var(--ink-soft);font-size:13px;">${new Date(u.created_at).toLocaleDateString()}</td>
+          <td style="padding:14px 0;text-align:right;">
+            <button class="btn ghost" style="padding:6px 12px;font-size:12px;margin-right:6px;" onclick="editUser(${u.id})">Edit</button>
+            <button class="btn ghost" style="padding:6px 12px;font-size:12px;color:var(--occupied);" onclick="deleteUserConfirm(${u.id}, '${u.username}')" ${u.id === currentUser?.id ? 'disabled' : ''}>Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      console.error('[user] Failed to load users:', err);
+      $('users-table-body').innerHTML = '<tr><td colspan="5" style="padding:24px 0;text-align:center;color:var(--occupied);">Failed to load users</td></tr>';
+    }
+  }
+
+  function showUsersPanel() {
+    // Check if user is admin
+    if (!currentUser || !currentUser.is_admin) {
+      alert('Access denied - Admin privileges required');
+      return;
+    }
+    document.querySelectorAll('.content').forEach(el => el.style.display = 'none');
+    $('users-panel').style.display = 'block';
+    loadUsers();
+  }
+
+  function showOverview() {
+    document.querySelectorAll('.content').forEach(el => el.style.display = 'none');
+    $('overview-panel').style.display = 'block';
+  }
+
+  function showCreateUserModal() {
+    editingUserId = null;
+    $('modal-title').textContent = 'Create User';
+    $('modal-username').value = '';
+    $('modal-email').value = '';
+    $('modal-password').value = '';
+    $('modal-is-admin').checked = false;
+    $('password-hint').style.display = 'none';
+    $('modal-error').style.display = 'none';
+    $('user-modal').style.display = 'flex';
+  }
+
+  async function editUser(userId) {
+    try {
+      const res = await fetch(`${API_BASE}/api/users`, { credentials: 'include' });
+      const users = await res.json();
+      const user = users.find(u => u.id === userId);
+      
+      if (!user) return;
+      
+      editingUserId = userId;
+      $('modal-title').textContent = 'Edit User';
+      $('modal-username').value = user.username;
+      $('modal-email').value = user.email || '';
+      $('modal-password').value = '';
+      $('modal-is-admin').checked = user.is_admin;
+      $('password-hint').style.display = 'block';
+      $('modal-error').style.display = 'none';
+      $('user-modal').style.display = 'flex';
+    } catch (err) {
+      console.error('[user] Failed to load user:', err);
+    }
+  }
+
+  async function saveUser() {
+    const username = $('modal-username').value.trim();
+    const email = $('modal-email').value.trim() || null;
+    const password = $('modal-password').value;
+    const isAdmin = $('modal-is-admin').checked;
+    const errorDiv = $('modal-error');
+    
+    if (!username) {
+      errorDiv.textContent = 'Username is required';
+      errorDiv.style.display = 'block';
+      return;
+    }
+    
+    if (!editingUserId && !password) {
+      errorDiv.textContent = 'Password is required for new users';
+      errorDiv.style.display = 'block';
+      return;
+    }
+    
+    try {
+      const body = { username, email, is_admin: isAdmin };
+      if (password) body.password = password;
+      
+      const res = await fetch(
+        editingUserId ? `${API_BASE}/api/users/${editingUserId}` : `${API_BASE}/api/users`,
+        {
+          method: editingUserId ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        }
+      );
+      
+      if (!res.ok) {
+        // Try to parse JSON error, fallback to status text
+        let errorMessage = `Failed to save user (${res.status})`;
+        try {
+          const data = await res.json();
+          errorMessage = data.error || errorMessage;
+        } catch (e) {
+          // Response wasn't JSON, use status text
+          const text = await res.text();
+          console.error('Non-JSON error response:', text);
+          if (res.status === 403) {
+            errorMessage = 'Access denied - Admin privileges required';
+          } else if (res.status === 401) {
+            errorMessage = 'Not logged in - Please refresh and log in again';
+          }
+        }
+        throw new Error(errorMessage);
+      }
+      
+      closeUserModal();
+      loadUsers();
+    } catch (err) {
+      console.error('[user] Save failed:', err);
+      errorDiv.textContent = err.message;
+      errorDiv.style.display = 'block';
+    }
+  }
+
+  function closeUserModal() {
+    $('user-modal').style.display = 'none';
+    editingUserId = null;
+  }
+
+  async function deleteUserConfirm(userId, username) {
+    if (!confirm(`Delete user "${username}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/users/${userId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to delete user');
+      }
+      
+      loadUsers();
+    } catch (err) {
+      alert('Failed to delete user: ' + err.message);
+    }
+  }
+
+  // ============================================================
+  // API Key Management (Admin only)
+  // ============================================================
+  
+  async function loadApiKeys() {
+    try {
+      const res = await fetch(`${API_BASE}/api/keys`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load API keys');
+      
+      const keys = await res.json();
+      const tbody = $('api-keys-table-body');
+      
+      if (keys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:24px 0;text-align:center;color:var(--muted);">No API keys yet</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = keys.map(k => `
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:14px 0;font-weight:500;">${k.name}</td>
+          <td style="padding:14px 0;color:var(--ink-soft);font-size:13px;">${k.description || '—'}</td>
+          <td style="padding:14px 0;color:var(--ink-soft);font-size:13px;">${new Date(k.created_at).toLocaleDateString()}</td>
+          <td style="padding:14px 0;color:var(--ink-soft);font-size:13px;">${k.last_used ? new Date(k.last_used).toLocaleString() : 'Never'}</td>
+          <td style="padding:14px 0;">
+            <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;
+              ${k.active ? 'background:#ecfdf5;color:#047857;' : 'background:#fef2f2;color:#b91c1c;'}">
+              ${k.active ? 'Active' : 'Revoked'}
+            </span>
+          </td>
+          <td style="padding:14px 0;text-align:right;">
+            ${k.active ? `<button class="btn ghost" style="padding:6px 12px;font-size:12px;margin-right:6px;color:var(--amber);" onclick="revokeApiKeyConfirm(${k.id}, '${k.name}')">Revoke</button>` : ''}
+            <button class="btn ghost" style="padding:6px 12px;font-size:12px;color:var(--occupied);" onclick="deleteApiKeyConfirm(${k.id}, '${k.name}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      console.error('[api-key] Failed to load API keys:', err);
+      $('api-keys-table-body').innerHTML = '<tr><td colspan="6" style="padding:24px 0;text-align:center;color:var(--occupied);">Failed to load API keys</td></tr>';
+    }
+  }
+
+  function showApiKeysPanel() {
+    // Check if user is admin
+    if (!currentUser || !currentUser.is_admin) {
+      alert('Access denied - Admin privileges required');
+      return;
+    }
+    document.querySelectorAll('.content').forEach(el => el.style.display = 'none');
+    $('api-keys-panel').style.display = 'block';
+    loadApiKeys();
+  }
+
+  function showCreateKeyModal() {
+    $('key-modal-title').textContent = 'Create API Key';
+    $('key-name').value = '';
+    $('key-description').value = '';
+    $('key-modal-error').style.display = 'none';
+    $('key-form').style.display = 'flex';
+    $('key-created').style.display = 'none';
+    $('api-key-modal').style.display = 'flex';
+  }
+
+  async function createApiKey() {
+    const name = $('key-name').value.trim();
+    const description = $('key-description').value.trim() || null;
+    const errorDiv = $('key-modal-error');
+    
+    if (!name) {
+      errorDiv.textContent = 'Name is required';
+      errorDiv.style.display = 'block';
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/keys`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, description })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to create API key');
+      }
+      
+      const data = await res.json();
+      
+      // Show the key
+      $('created-key-value').textContent = data.api_key;
+      $('key-form').style.display = 'none';
+      $('key-created').style.display = 'block';
+    } catch (err) {
+      errorDiv.textContent = err.message;
+      errorDiv.style.display = 'block';
+    }
+  }
+
+  function copyApiKey() {
+    const keyText = $('created-key-value').textContent;
+    navigator.clipboard.writeText(keyText).then(() => {
+      const btn = event.target.closest('button');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Copied!';
+      setTimeout(() => btn.innerHTML = originalText, 2000);
+    });
+  }
+
+  function closeKeyModal() {
+    $('api-key-modal').style.display = 'none';
+  }
+
+  async function revokeApiKeyConfirm(keyId, name) {
+    if (!confirm(`Revoke API key "${name}"? The detector will no longer be able to authenticate.`)) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/keys/${keyId}/revoke`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (!res.ok) throw new Error('Failed to revoke API key');
+      loadApiKeys();
+    } catch (err) {
+      alert('Failed to revoke API key: ' + err.message);
+    }
+  }
+
+  async function deleteApiKeyConfirm(keyId, name) {
+    if (!confirm(`Permanently delete API key "${name}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/keys/${keyId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!res.ok) throw new Error('Failed to delete API key');
+      loadApiKeys();
+    } catch (err) {
+      alert('Failed to delete API key: ' + err.message);
+    }
+  }
+
+  // ============================================================
   // Boot
   // ============================================================
-  refresh();
+  // Try to load dashboard — if 401, login screen will show automatically
+  loadCurrentUser(); // Load user info to check admin status
+  refresh().catch(() => {
+    console.log('[boot] Initial auth check failed, showing login');
+    showLogin();
+  });
   refreshTimer = setInterval(refresh, REFRESH_MS);
 </script>
 </body>

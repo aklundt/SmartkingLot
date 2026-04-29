@@ -2,6 +2,7 @@ import os
 import sqlite3
 from pathlib import Path
 from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv(Path(__file__).parent.parent / '.env')
 DB_PATH = os.getenv('DB_PATH', 'parking.db')
@@ -60,6 +61,29 @@ def init_db():
             img_height INTEGER NOT NULL
         )
     ''')
+
+    # User management tables
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            username      TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            email         TEXT,
+            is_admin      INTEGER NOT NULL DEFAULT 0,
+            created_at    TEXT DEFAULT (datetime('now'))
+        )
+    ''')
+
+    # Migrate existing users table if email column doesn't exist
+    try:
+        c.execute('ALTER TABLE users ADD COLUMN email TEXT')
+    except:
+        pass
+    
+    try:
+        c.execute('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0')
+    except:
+        pass
 
     conn.commit()
     conn.close()
@@ -161,58 +185,104 @@ def get_history(hours=24):
     return [dict(r) for r in rows]
 
 
-def get_spot_stats():
-    """
-    Per-spot statistics computed from spot_states + snapshots history.
+# ============================================================
+# User management functions
+# ============================================================
 
-    Returns a list of dicts: [{
-        id, cx, cy, w, h,
-        observations,        # number of snapshots this spot appeared in
-        occupied_count,      # number of those where it was occupied
-        occupied_pct,        # occupied_count / observations * 100
-        turnover,            # number of state changes (occupied -> open or vice versa)
-    }, ...]
-    """
+def create_user(username, password, email=None, is_admin=False):
+    """Create a new user account"""
     conn = get_conn()
+    try:
+        conn.execute(
+            'INSERT INTO users (username, password_hash, email, is_admin) VALUES (?, ?, ?, ?)',
+            (username, generate_password_hash(password), email, 1 if is_admin else 0)
+        )
+        conn.commit()
+        user_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+        user = get_user_by_id(user_id)
+        conn.close()
+        return user
+    except sqlite3.IntegrityError:
+        conn.close()
+        return None
 
-    # base spot info
-    spots = {r['id']: dict(r) for r in conn.execute('SELECT * FROM spots').fetchall()}
-    for s in spots.values():
-        s['observations']   = 0
-        s['occupied_count'] = 0
-        s['turnover']       = 0
 
-    # walk through every spot_state ordered by snapshot time, tracking transitions
-    rows = conn.execute('''
-        SELECT ss.spot_id, ss.occupied, s.timestamp
-        FROM spot_states ss
-        JOIN snapshots s ON s.id = ss.snapshot_id
-        ORDER BY ss.spot_id, s.id
-    ''').fetchall()
+def get_user_by_username(username):
+    """Get user by username"""
+    conn = get_conn()
+    row = conn.execute(
+        'SELECT * FROM users WHERE username = ?', (username,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
 
-    last_state = {}  # spot_id -> last seen occupied value (0 or 1)
-    for r in rows:
-        sid = r['spot_id']
-        occ = r['occupied']
-        if sid not in spots:
-            continue
 
-        spots[sid]['observations']   += 1
-        spots[sid]['occupied_count'] += occ
+def get_user_by_id(user_id):
+    """Get user by ID"""
+    conn = get_conn()
+    row = conn.execute(
+        'SELECT * FROM users WHERE id = ?', (user_id,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
 
-        if sid in last_state and last_state[sid] != occ:
-            spots[sid]['turnover'] += 1
-        last_state[sid] = occ
 
+def get_all_users():
+    """Get all users (without password hashes)"""
+    conn = get_conn()
+    rows = conn.execute(
+        'SELECT id, username, email, is_admin, created_at FROM users ORDER BY created_at DESC'
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def update_user(user_id, username=None, email=None, password=None, is_admin=None):
+    """Update user information"""
+    conn = get_conn()
+    updates = []
+    params = []
+    
+    if username is not None:
+        updates.append('username = ?')
+        params.append(username)
+    if email is not None:
+        updates.append('email = ?')
+        params.append(email)
+    if password is not None:
+        updates.append('password_hash = ?')
+        params.append(generate_password_hash(password))
+    if is_admin is not None:
+        updates.append('is_admin = ?')
+        params.append(1 if is_admin else 0)
+    
+    if not updates:
+        conn.close()
+        return False
+    
+    params.append(user_id)
+    
+    try:
+        conn.execute(
+            f'UPDATE users SET {", ".join(updates)} WHERE id = ?',
+            params
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except sqlite3.IntegrityError:
+        conn.close()
+        return False
+
+
+def delete_user(user_id):
+    """Delete a user"""
+    conn = get_conn()
+    conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    conn.commit()
     conn.close()
 
-    # compute percentages
-    result = []
-    for s in spots.values():
-        s['occupied_pct'] = (
-            s['occupied_count'] / s['observations'] * 100
-            if s['observations'] > 0 else 0
-        )
-        result.append(s)
 
-    return result
+def verify_password(user, password):
+    """Verify a user's password"""
+    return check_password_hash(user['password_hash'], password)
