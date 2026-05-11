@@ -51,6 +51,8 @@ def filter_by_size(detections):
 
 
 def iou(a, b):
+    # Convert centroid-format boxes into corner coordinates before measuring
+    # how much two detections overlap.
     ax1, ay1 = a['cx'] - a['w'] / 2, a['cy'] - a['h'] / 2
     ax2, ay2 = a['cx'] + a['w'] / 2, a['cy'] + a['h'] / 2
     bx1, by1 = b['cx'] - b['w'] / 2, b['cy'] - b['h'] / 2
@@ -65,6 +67,8 @@ def iou(a, b):
 
 
 def nms(detections):
+    # Keep the highest-confidence detection first, then reject later boxes that
+    # overlap too heavily with a box already accepted.
     sorted_dets = sorted(detections, key=lambda d: d['confidence'], reverse=True)
     kept = []
     for det in sorted_dets:
@@ -74,6 +78,8 @@ def nms(detections):
 
 
 def match_detections_to_spots(detections, registered_spots):
+    # The first successful scan defines stable parking spots. Later detections
+    # are mapped back to those stored spots by nearest centroid.
     states = {}
     for det in detections:
         best = min(
@@ -99,6 +105,8 @@ def index():
 
 @app.route('/stream')
 def stream():
+    # Browser clients read the video through the API so the frontend does not
+    # need to know where the edge stream is hosted.
     r = req.get(STREAM_URL, stream=True, timeout=10)
     return Response(r.iter_content(chunk_size=1024),
                     content_type=r.headers['Content-Type'])
@@ -125,9 +133,13 @@ def post_snapshot():
     if not detections:
         return jsonify({'error': 'no detections survived filtering'}), 400
 
+    # Store the camera dimensions so pixel-space boxes can be scaled correctly
+    # by the browser, even if future input images have a different resolution.
     db.set_camera_config(img_width, img_height)
 
     if not db.spots_registered():
+        # On the first usable frame, treat the filtered detections as the spot
+        # registry. Later snapshots update states for these same spots.
         registered = db.register_spots(detections)
         db.normalize_spot_ids()
         registered = db.get_all_spots()  # refetch with new IDs

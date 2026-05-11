@@ -445,6 +445,8 @@ KPIs, historical chart, spot rankings, theme controls, and manual scan controls.
   <p id="error"></p>
 
   <script>
+    // Convert each spot's occupancy percentage into a green-to-red heatmap
+    // color for the historical usage overlay.
     function heatColor(pct) {
       const r = Math.round(pct < 50 ? 135 + (255-135) * (pct/50) : 255);
       const g = Math.round(pct < 50 ? 179 + (255-179) * (pct/50) : 255 - (255-75) * ((pct-50)/50));
@@ -515,6 +517,8 @@ KPIs, historical chart, spot rankings, theme controls, and manual scan controls.
     let chart         = null;
 
     function parseUtc(timestampStr) {
+      // SQLite timestamps do not include a timezone suffix, so append Z to
+      // interpret them as UTC in the browser.
       return new Date(timestampStr.replace(' ', 'T') + 'Z');
     }
 
@@ -548,6 +552,7 @@ KPIs, historical chart, spot rankings, theme controls, and manual scan controls.
     function renderChart(history) {
       const ctx = document.getElementById('history-chart-canvas').getContext('2d');
       const colors = chartTheme();
+      // Chart.js expects time-series points as x/y objects.
       const points = history.map(h => ({
         x: new Date(h.timestamp.replace(' ', 'T') + 'Z'),
         y: h.total > 0 ? (h.occupied / h.total * 100) : 0,
@@ -620,6 +625,8 @@ KPIs, historical chart, spot rankings, theme controls, and manual scan controls.
 
     async function refresh() {
       try {
+        // Load all dashboard data in parallel so the UI updates as one coherent
+        // snapshot instead of several staggered requests.
         const [stateRes, spotsRes, histRes] = await Promise.all([
           fetch('/api/state'),
           fetch('/api/spots'),
@@ -661,6 +668,8 @@ KPIs, historical chart, spot rankings, theme controls, and manual scan controls.
         const pctX = 100 / state.img_width;
         const pctY = 100 / state.img_height;
 
+        // The API stores spot boxes in image pixels; the frontend converts them
+        // to percentages so overlays stay aligned as the image resizes.
         const liveFrag = document.createDocumentFragment();
         state.spots.forEach(spot => {
           const box = document.createElement('div');
@@ -695,6 +704,8 @@ KPIs, historical chart, spot rankings, theme controls, and manual scan controls.
         map.appendChild(liveFrag);
         heat.appendChild(heatFrag);
 
+        // Ranked lists reuse data-spot-id so hovering a row highlights the same
+        // spot in the live view and heatmap.
         const liItem = s => `<li data-spot-id="${s.id}"><span class="spot-id">${s.id}</span><span class="meta">${s.occupied_pct.toFixed(0)}%  ${s.occupied_count}/${s.observations}</span></li>`;
         const liTurn = s => `<li data-spot-id="${s.id}"><span class="spot-id">${s.id}</span><span class="meta">${s.turnover} changes</span></li>`;
         const liAll = s => `<li data-spot-id="${s.id}"><span class="spot-id">${s.id}</span><span class="meta">${s.observations} samples  ${s.occupied_count} occ ${s.occupied_pct.toFixed(0)}%  ${s.turnover} changes</span></li>`;
@@ -731,6 +742,8 @@ KPIs, historical chart, spot rankings, theme controls, and manual scan controls.
         if (state && state.timestamp !== previousTimestamp) return true;
       }
 
+      // If the detector did not produce a new snapshot, surface its last known
+      // status instead of leaving the user with a silent timeout.
       try {
         const res = await fetch('/api/detector/status');
         if (res.ok) {

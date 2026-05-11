@@ -13,6 +13,8 @@ import pytest
 
 # make api/ and detector/ importable
 ROOT = os.path.join(os.path.dirname(__file__), '..')
+# The project is not packaged as an installable module, so tests add the source
+# directories to sys.path directly.
 sys.path.insert(0, os.path.join(ROOT, 'api'))
 sys.path.insert(0, os.path.join(ROOT, 'detector'))
 

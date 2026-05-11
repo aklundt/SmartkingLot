@@ -25,6 +25,8 @@ def run_detection_and_post(api_client, filename):
     path = os.path.join(IMAGES, filename)
     assert os.path.exists(path), f"Test image not found: {path}"
 
+    # Tests use the real model on saved lot images, then post the detections
+    # through Flask's test client to exercise the API processing pipeline.
     with open(path, 'rb') as f:
         frame_bytes = f.read()
 

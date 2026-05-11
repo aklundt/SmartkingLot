@@ -18,6 +18,8 @@ DB_PATH = os.getenv('DB_PATH', 'parking.db')
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
+    # Row objects allow callers to convert query results directly into dicts
+    # for JSON responses.
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -26,6 +28,8 @@ def init_db():
     conn = get_conn()
     c = conn.cursor()
 
+    # Spots are the stable physical parking spaces discovered during the first
+    # successful detection cycle.
     c.execute('''
         CREATE TABLE IF NOT EXISTS spots (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,6 +48,7 @@ def init_db():
     except:
         pass
 
+    # Snapshots store one aggregate row per detection cycle.
     c.execute('''
         CREATE TABLE IF NOT EXISTS snapshots (
             id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,6 +59,8 @@ def init_db():
         )
     ''')
 
+    # Spot states connect each registered spot to its occupied/open value for a
+    # specific snapshot.
     c.execute('''
         CREATE TABLE IF NOT EXISTS spot_states (
             snapshot_id INTEGER NOT NULL REFERENCES snapshots(id),
@@ -72,6 +79,8 @@ def init_db():
         ON spot_states (snapshot_id)
     ''')
 
+    # The app tracks the latest image dimensions so frontend overlays can scale
+    # bounding boxes from pixel coordinates into percentages.
     c.execute('''
         CREATE TABLE IF NOT EXISTS camera_config (
             id         INTEGER PRIMARY KEY CHECK (id = 1),
@@ -132,6 +141,8 @@ def save_snapshot(spot_states):
     occupied = sum(1 for v in spot_states.values() if v)
     open_    = total - occupied
 
+    # Save the aggregate snapshot first, then store one row for each spot in
+    # that same snapshot.
     conn = get_conn()
     cur  = conn.execute(
         'INSERT INTO snapshots (total, occupied, open) VALUES (?, ?, ?)',
@@ -170,6 +181,8 @@ def get_latest_state():
 
 def get_history(hours=24):
     conn = get_conn()
+    # SQLite's datetime arithmetic keeps the history endpoint simple for chart
+    # ranges such as 1h, 6h, 24h, and 7d.
     rows = conn.execute('''
         SELECT id, timestamp, total, occupied, open
         FROM snapshots
@@ -194,7 +207,8 @@ def get_spot_stats():
     """
     conn = get_conn()
 
-    # base spot info
+    # Start with every registered spot so the dashboard can display spots even
+    # before they have much historical activity.
     spots = {r['id']: dict(r) for r in conn.execute('SELECT * FROM spots').fetchall()}
     for s in spots.values():
         s['observations']   = 0

@@ -40,6 +40,8 @@ print(f'[detector] Snapshot timeout: {SNAPSHOT_TIMEOUT}s')
 control = Flask(__name__)
 rescan_requested = threading.Event()
 status_lock = threading.Lock()
+# Shared detector status is exposed to the API/dashboard so manual rescans can
+# report useful progress or error messages.
 status = {
     'phase': 'starting',
     'pending_rescan': False,
@@ -57,6 +59,8 @@ def now_utc():
 
 
 def update_status(**kwargs):
+    # The detector loop and Flask control server run on different threads, so
+    # status updates are guarded by a lock.
     with status_lock:
         status.update(kwargs)
 
@@ -83,6 +87,8 @@ def grab_frame():
     buf = b''
     for chunk in r.iter_content(chunk_size=1024):
         buf += chunk
+        # MJPEG is a stream of JPEG images; these byte markers identify a full
+        # frame that OpenCV can decode.
         start = buf.find(b'\xff\xd8')
         if start == -1:
             continue
@@ -100,6 +106,8 @@ def detect(frame_bytes):
     detections = []
     for box in results[0].boxes:
         x1, y1, x2, y2 = map(int, box.xyxy[0])
+        # The trained model uses class 0 for occupied spaces and class 1 for
+        # open spaces. The API stores this as a boolean occupancy value.
         detections.append({
             'cx':         (x1 + x2) / 2,
             'cy':         (y1 + y2) / 2,
@@ -123,6 +131,8 @@ def post_snapshot(detections, img_width, img_height):
 
 
 def run():
+    # Run the small control API in the background while the main thread handles
+    # repeated detection cycles.
     threading.Thread(target=run_control_server, daemon=True).start()
 
     while True:
@@ -161,6 +171,8 @@ def run():
             update_status(phase='sleeping', last_scan_finished_at=now_utc())
 
         print(f'[detector] Sleeping {INTERVAL}s...')
+        # Waiting on the event lets the detector wake early when the dashboard
+        # requests a manual scan.
         if rescan_requested.wait(INTERVAL):
             rescan_requested.clear()
             update_status(pending_rescan=False, last_message='manual rescan starting')

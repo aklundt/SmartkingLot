@@ -37,6 +37,8 @@ AUTO_INTERVAL  = 40
 AUTO_PATTERNS  = [f'lot{i}.jpg' for i in range(1, 12)]
 
 current_frame = None
+# The active frame can be changed from the console or auto-rotate thread while
+# clients are streaming, so reads/writes share a lock.
 frame_lock    = threading.Lock()
 
 
@@ -44,6 +46,8 @@ def load_image(path):
     img = cv2.imread(path)
     if img is None:
         raise ValueError(f'Could not load image: {path}')
+    # Store each image as encoded JPEG bytes so clients can receive it directly
+    # inside the MJPEG response.
     _, jpg = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, 85])
     return jpg.tobytes()
 
@@ -59,6 +63,8 @@ def switch_frame(path):
 
 def stream_client(conn):
     try:
+        # MJPEG streams use a multipart response where each part is a complete
+        # JPEG frame separated by a boundary marker.
         conn.sendall(
             b"HTTP/1.1 200 OK\r\n"
             b"Content-Type: multipart/x-mixed-replace; boundary=frame\r\n\r\n"
