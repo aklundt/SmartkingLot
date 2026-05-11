@@ -18,6 +18,12 @@ ROOT = os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, os.path.join(ROOT, 'api'))
 sys.path.insert(0, os.path.join(ROOT, 'detector'))
 
+# Keep Ultralytics test config in a writable temp directory so test runs do not
+# need permission to write into a user's global AppData/config directory.
+yolo_config_dir = os.path.join(tempfile.gettempdir(), 'smartkinglot-yolo-config')
+os.makedirs(yolo_config_dir, exist_ok=True)
+os.environ.setdefault('YOLO_CONFIG_DIR', yolo_config_dir)
+
 
 @pytest.fixture
 def api_client():
