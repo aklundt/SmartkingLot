@@ -1,3 +1,12 @@
+# SmartkingLot - YOLOv8 Detector Service
+# Written by: Andrew Klundt, Aiden Fenstermacher
+# Assisted by: Rohan Ginjupalli, Evan Biggins
+# Tested by: Andrew Klundt, Aiden Fenstermacher, Evan Biggins
+# Debugged by: Andrew Klundt, Aiden Fenstermacher, Evan Biggins
+# Description: Pulls frames from the MJPEG stream, runs YOLOv8 inference,
+# converts detections into parking spot records, posts snapshots to the API,
+# and exposes detector status/rescan controls.
+
 import os
 import time
 import requests

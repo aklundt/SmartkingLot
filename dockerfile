@@ -1,3 +1,12 @@
+# SmartkingLot - Docker Build File
+# Written by: Andrew Klundt, Aiden Fenstermacher
+# Assisted by: Evan Biggins, Rohan Ginjupalli
+# Tested by: Andrew Klundt, Aiden Fenstermacher
+# Debugged by: Andrew Klundt, Aiden Fenstermacher, Evan Biggins
+# Description: Builds the Python runtime environment, installs computer vision
+# dependencies, installs project requirements, and copies the SmartkingLot
+# application into the container.
+
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

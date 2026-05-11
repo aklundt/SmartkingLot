@@ -1,3 +1,11 @@
+# SmartkingLot - Simulated Edge Camera Stream
+# Written by: Andrew Klundt, Aiden Fenstermacher
+# Assisted by: Rohan Ginjupalli, Evan Biggins
+# Tested by: Andrew Klundt, Aiden Fenstermacher, Evan Biggins
+# Debugged by: Andrew Klundt, Aiden Fenstermacher, Rohan Ginjupalli
+# Description: Simulates an IoT edge camera by serving static parking lot
+# images as an MJPEG stream for development, testing, and live demonstration.
+
 """
 fake-stream.py
 

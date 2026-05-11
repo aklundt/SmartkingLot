@@ -1,3 +1,12 @@
+# SmartkingLot - SQLite Database Layer
+# Written by: Aiden Fenstermacher, Andrew Klundt
+# Assisted by: Rohan Ginjupalli, Evan Biggins
+# Tested by: Aiden Fenstermacher, Andrew Klundt, Evan Biggins
+# Debugged by: Aiden Fenstermacher, Andrew Klundt, Rohan Ginjupalli
+# Description: Defines the database schema and helper functions for parking
+# spots, snapshots, spot states, camera configuration, history, and per-spot
+# analytics.
+
 import os
 import sqlite3
 from pathlib import Path

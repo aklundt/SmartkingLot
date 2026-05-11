@@ -1,3 +1,11 @@
+# SmartkingLot - Docker Compose Configuration
+# Written by: Andrew Klundt, Aiden Fenstermacher
+# Assisted by: Rohan Ginjupalli, Evan Biggins
+# Tested by: Andrew Klundt, Aiden Fenstermacher, Evan Biggins
+# Debugged by: Andrew Klundt, Aiden Fenstermacher, Rohan Ginjupalli
+# Description: Defines the API and detector services, environment variables,
+# health checks, networking, and persistent database volume.
+
 services:
   api:
     build: .

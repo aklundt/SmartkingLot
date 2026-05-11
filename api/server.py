@@ -1,3 +1,12 @@
+# SmartkingLot - Flask API and Occupancy Processing
+# Written by: Andrew Klundt, Aiden Fenstermacher
+# Assisted by: Rohan Ginjupalli, Evan Biggins
+# Tested by: Andrew Klundt, Aiden Fenstermacher, Evan Biggins
+# Debugged by: Andrew Klundt, Aiden Fenstermacher, Rohan Ginjupalli
+# Description: Receives YOLO detections, filters duplicate/outlier boxes,
+# matches detections to registered parking spots, stores snapshots, and serves
+# dashboard/API routes.
+
 import os
 from datetime import datetime, timezone
 from pathlib import Path

@@ -1,3 +1,12 @@
+# SmartkingLot - Occupancy Integration Tests
+# Written by: Andrew Klundt, Aiden Fenstermacher
+# Assisted by: Evan Biggins, Rohan Ginjupalli
+# Tested by: Andrew Klundt, Aiden Fenstermacher, Evan Biggins
+# Debugged by: Andrew Klundt, Aiden Fenstermacher, Rohan Ginjupalli
+# Description: Runs parking lot test images through the detector/API pipeline
+# and verifies expected occupancy ranges for empty, half-full, and full lot
+# scenarios.
+
 """
 Integration tests: parking lot occupancy
 

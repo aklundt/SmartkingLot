@@ -1,3 +1,11 @@
+# SmartkingLot - Test Configuration
+# Written by: Andrew Klundt, Aiden Fenstermacher
+# Assisted by: Evan Biggins, Rohan Ginjupalli
+# Tested by: Andrew Klundt, Aiden Fenstermacher
+# Debugged by: Andrew Klundt, Aiden Fenstermacher, Evan Biggins
+# Description: Configures pytest imports and creates an isolated temporary
+# SQLite database for API tests.
+
 import os
 import sys
 import tempfile
